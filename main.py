@@ -1,8 +1,12 @@
-# --------
-# import packages
-# --------
+# -------------------------------------------------
+# Import packages
+# -------------------------------------------------
 import numpy as np
 import pandas as pd
+
+# -------------------------------------------------
+# Define global variables
+# -------------------------------------------------
 max_per_project=5
 original_matrix=[]
 matrix=[[1,2,3],[2,4,6],[3,6,9],[2,1,3],[1,5,2],[6,8,5],[3,4,5]]
@@ -22,6 +26,9 @@ matched_per_project=np.zeros(col_num,dtype=int)
 primed_uncovered_pair=[-1,-1]
 # the tempory matching
 
+# -------------------------------------------------
+# Load and preprocess data
+# -------------------------------------------------
 def Load_Data():
     data=pd.read_csv("data.csv")
     data=pd.DataFrame(data)
@@ -39,7 +46,7 @@ def Process_Data(data):
                 data[row][col]=100
     global matrix, original_matrix
     matrix=data.astype('int')
-    original_matrix=matrix
+    original_matrix=data.astype('int')
 
 def initialize():
     global row_num,col_num,covered_row,covered_column,covered_matrix,primed_matrix,matched_matrix,matched_per_student,matched_per_project,primed_uncovered_pair
@@ -51,12 +58,20 @@ def initialize():
     matched_per_student = np.zeros(row_num, dtype=int)
     matched_per_project = np.zeros(col_num, dtype=int)
 
+# -------------------------------------------------
+# Output data
+# -------------------------------------------------
 def Output_Data(data):
-    print("result", np.multiply(original_matrix, matched_matrix))
+    #print("result", np.multiply(original_matrix, matched_matrix))
     data=pd.DataFrame(data)
-    data=pd.DataFrame( matched_matrix)
+    data=pd.DataFrame(np.multiply(original_matrix, matched_matrix))
+    print(np.sum(np.sum(data)))
+    print("each project has students",matched_per_project)
     data.to_csv("result.csv")
 
+# -------------------------------------------------
+# Define help functions
+# -------------------------------------------------
 def Cover_Row(row):
     global covered_matrix, covered_row
     for col in range(0, col_num):
@@ -117,6 +132,9 @@ def Noncovered_Zero():
                 return True
     return False
 
+# -------------------------------------------------
+# Main steps
+# -------------------------------------------------
 def Step1():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
     for col in range(0,col_num):
@@ -144,7 +162,6 @@ def Step2():
 
 def Step3():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
-    print(matched_matrix)
     for row in range(0,row_num):
         for col in range(0,col_num):
             if matched_matrix[row][col]==1:
@@ -157,7 +174,6 @@ def Step3():
     return step
 
 def Step4():
-    #print(matrix)
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
     print(4)
 
@@ -174,14 +190,10 @@ def Step4():
                             if matched_matrix[row][col]==1:
                                 Uncover_Row(row)
                         Cover_Col(col)
-    Output_Data(matched_matrix)
     return 6
 
 def Step5():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
-    print("matrix",matrix)
-    print("cover",covered_matrix)
-    print("prime",primed_uncovered_pair)
     star_series=[]
     unstar_series=[]
     row_loc=primed_uncovered_pair[0]
@@ -226,6 +238,9 @@ def Step6():
     print(6)
     return 4
 
+# -------------------------------------------------
+# Core loops
+# -------------------------------------------------
 def munkres():
     whether_Continue = True
     step = 1
@@ -242,15 +257,15 @@ steps = { 1: Step1,
           5: Step5,
           6: Step6}
 
+# -------------------------------------------------
+# Main function
+# -------------------------------------------------
 def main():
     data=Load_Data()
     Process_Data(data)
     initialize()
     munkres()
     Output_Data(matched_matrix)
-
-
-
 
 if __name__ == '__main__':
     main()
