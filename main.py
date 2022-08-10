@@ -3,7 +3,7 @@
 # --------
 import numpy as np
 import pandas as pd
-
+max_per_project=1
 
 matrix=[[1,2,3],[2,4,6],[3,6,9],[2,1,3],[1,5,2],[6,8,5],[3,4,5]]
 # student's choices
@@ -23,7 +23,7 @@ primed_uncovered_pair=[-1,-1]
 # the tempory matching
 
 def Load_Data():
-    data=pd.read_csv("data.csv")
+    data=pd.read_csv("data2.csv")
     data=pd.DataFrame(data)
     data=np.array(data)
     global row_num,col_num
@@ -39,7 +39,6 @@ def Process_Data(data):
                 data[row][col]=100
     global matrix
     matrix=data.astype('int')
-
 
 def initialize():
     global row_num,col_num,covered_row,covered_column,covered_matrix,primed_matrix,matched_matrix,matched_per_student,matched_per_project,primed_uncovered_pair
@@ -95,7 +94,7 @@ def Find_Starred_Row(row):
 
 def Find_Primed_Column(col):
     for row in range(0,row_num):
-        if matched_matrix[row][col]==1:
+        if primed_matrix[row][col]==1:
             return row
     print("Error occurs.")
     return -1
@@ -107,24 +106,31 @@ def Clear_Notation():
     covered_matrix = np.zeros((row_num, col_num), dtype=int)
     primed_uncovered_pair=[-1,-1]
 
+def Noncovered_Zero():
+    result=1
+    for row in range(0,row_num):
+        for col in range(0,col_num):
+            if covered_matrix[row][col]==0:
+                result*=matrix[row][col]
+    return result
+
 def Step1():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
-    for row in range(0,row_num):
-        min=matrix[row][0]
-        for col in range(0,col_num):
+    for col in range(0,col_num):
+        min=matrix[0][col]
+        for row in range(0,row_num):
             if (matrix[row][col]<min):
                 min=matrix[row][col]
-        for col in range(0,col_num):
+        for row in range(0,row_num):
             matrix[row][col]-=min
     print(1)
     return 2
 
 def Step2():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
-    print(matched_matrix)
     for row in range(0,row_num):
         for col in range(0,col_num):
-            if matrix[row][col]==0 and matched_per_student[row]==0 and matched_per_project[col]<5:
+            if matrix[row][col]==0 and matched_per_student[row]==0 and matched_per_project[col]<max_per_project:
                 matched_matrix[row][col]=1
                 matched_per_student[row]+=1
                 matched_per_project[col]+=1
@@ -135,6 +141,7 @@ def Step2():
 
 def Step3():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
+    print(matched_matrix)
     for row in range(0,row_num):
         for col in range(0,col_num):
             if matched_matrix[row][col]==1:
@@ -147,41 +154,31 @@ def Step3():
     return step
 
 def Step4():
+    #print(matrix)
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
     print(4)
-    noncovered_matrix=np.zeros((row_num,col_num),dtype=int)
-    for row in range(0,row_num):
-        for col in range(0,col_num):
-            noncovered_matrix=1-covered_matrix
-    #noncovered_matrix=[1-a for a in covered_matrix]
-    noncovered_elements=np.multiply(matrix,noncovered_matrix)
-    while(np.product(noncovered_elements)==0):
-        #print(222)
+
+    while(Noncovered_Zero()==0):
         for row in range(0,row_num):
             for col in range(0,col_num):
                 if matrix[row][col]==0 and covered_matrix[row][col]==0:
-                    #print(333)
-                    #print(matched_per_project)
                     primed_matrix[row][col]=1
-                    global primed_uncovered_pair
-                    if matched_per_project[col]<5:
+                    if matched_per_project[col]<max_per_project:
                         primed_uncovered_pair=[row,col]
-                        print(111)
                         return 5
                     else:
-                        Cover_Col(col)
                         for row in range(0,row_num):
                             if matched_matrix[row][col]==1:
                                 Uncover_Row(row)
-        for row in range(0, row_num):
-            for col in range(0, col_num):
-                noncovered_matrix = 1 - covered_matrix
-        noncovered_elements = np.multiply(matrix, noncovered_matrix)
+                        Cover_Col(col)
     Output_Data(matched_matrix)
     return 6
 
 def Step5():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
+    print("matrix",matrix)
+    print("cover",covered_matrix)
+    print("prime",primed_uncovered_pair)
     #primed_loc=Find_Primed()[0]
     row_loc=primed_uncovered_pair[0]
     col_loc=primed_uncovered_pair[1]
@@ -203,14 +200,19 @@ def Step5():
 
 def Step6():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
-    noncovered_elements = np.multiply(matrix, covered_matrix)
-    min=np.min(noncovered_elements)
+    min=100
+    for row in range(0, row_num):
+        for col in range(0, col_num):
+            if covered_matrix[row][col]==0 and matrix[row][col]<min:
+                min=matrix[row][col]
     for row in range(0, row_num):
         if covered_row[row]==0:
-            matrix[row][:]=matrix[row][:]-min
+            for col in range(0, col_num):
+                matrix[row][col]-=min
     for col in range(0, col_num):
         if covered_column[col]==1:
-            matrix[:][col]=matrix[:][col]+min
+            for row in range(0, row_num):
+                matrix[row][col]+=min
     print(6)
     return 4
 
