@@ -31,6 +31,7 @@ primed_uncovered_pair=[-1,-1]
 # -------------------------------------------------
 def Load_Data():
     data=pd.read_csv("data.csv")
+    data.to_csv("test.csv")
     data=pd.DataFrame(data)
     data=np.array(data)
     global row_num,col_num
@@ -68,6 +69,17 @@ def Output_Data(data):
     print(np.sum(np.sum(data)))
     print("each project has students",matched_per_project)
     data.to_csv("result.csv")
+
+def Post_Process():
+    result=np.zeros((row_num,3))
+    for i in range(0,row_num):
+        for j in range(0,col_num):
+            if matched_matrix[i][j]==1:
+                result[i][0]=i+1
+                result[i][1]=j+1
+                result[i][2]=original_matrix[i][j]
+    result=pd.DataFrame(result)
+    result.to_csv("result.csv")
 
 # -------------------------------------------------
 # Define help functions
@@ -265,7 +277,8 @@ def main():
     Process_Data(data)
     initialize()
     munkres()
-    Output_Data(matched_matrix)
+    #Output_Data(matched_matrix)
+    Post_Process()
 
 if __name__ == '__main__':
     main()
