@@ -222,13 +222,25 @@ steps = { 1: Step1,
 
 
 def munkres(original_matrix,max,row,col,counter):
+   '''
+   the core munkres algorithm to match students with projects
+
+   :param original_matrix: students' preference matrix
+   :param max: an array that records the maximum students that a project can still enroll
+   :param row: number of students
+   :param col: number of projects
+   :param counter: the number of students that aren't enrolled in a project
+   :return:
+   matched_matrix: a 2D array where 1 represents a student successfully matches a project while 0 doesn't
+   matched_per_project: an array about how many students match a certain project
+   '''
     global matrix,row_num,col_num,max_per_project,count
     matrix=original_matrix
     max_per_project=max
     row_num=row
     col_num=col
-    initialize()
     count=counter
+    initialize()
     whether_Continue = True
     step = 1
     while (whether_Continue):
