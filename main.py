@@ -71,7 +71,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     :param col_num: number of projects
     :param i: the ith loop
     :return:
-    matrix: updated students' preference matrix that is used in the next matching process
+    new_matrix: updated students' preference matrix that is used in the next matching process
     matched_student: an array about the project number that a certain student is enrolled
     max: an array that records the maximum students that a project can still enroll
     count: the number of students that aren't enrolled in a project
@@ -81,6 +81,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     lower_limit=0
     if i<5:
         lower_limit=1
+        # for debugging temporarily
     elif i<10:
         lower_limit=1
     elif i<15:
@@ -93,16 +94,18 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     # in certain projects
     # reset the matrix to the original matrix
     matrix=original_matrix
+    count_project=col_num
     for col in range(0,col_num):
         if matched_per_project[col]==5:
             # the project is full of people
+            count_project-=1
             for row in range(0,row_num):
                 if matched_matrix[row][col]==1:
                     matched_student[row]=col
                     # the student has been enrolled, and can't be enrolled in other projects
-                    for col2 in range(0,col_num):
-                        matrix[row][col2]=100
-                matrix[row][col]=100
+                    # for col2 in range(0,col_num):
+                    #    matrix[row][col2]=100
+               # matrix[row][col]=100
             # the project cannot enroll any more students
             max[col]=0
         elif matched_per_project[col]==4:
@@ -111,18 +114,41 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
                 if matched_matrix[row][col]==1:
                 # enroll those matched students
                     matched_student[row]=col
-                    for col2 in range(0,col_num):
-                        matrix[row][col2]=100
+                    # for col2 in range(0,col_num):
+                    #    matrix[row][col2]=100
             max[col]=1
-        elif matched_per_project[col]<=lower_limit:
+        # elif matched_per_project[col]<=lower_limit:
             # the project would be eliminated
-            for row in range(0,row_num):
-                matrix[row][col]=100
-    count=0
+        #    for row in range(0,row_num):
+        #        matrix[row][col]=100
+
+    # derive the matrix to be assigned
+    new_matrix=[]
+    help_student=[]
     for row in range(0,row_num):
         if matched_student[row]==-1:
-            count+=1
-    return (matrix,matched_student,max,count)
+            new_matrix.append(original_matrix[row])
+            help_student.append(row)
+    rest_matrix=[]
+    help_matrix=[]
+    for col in range(0,col_num):
+        if matched_per_project[col]==5:
+            for row in new_matrix:
+                row=row.tolist()
+                help_matrix=row[:col]
+                help_matrix.extend(row[col+1:])
+                rest_matrix.append(help_matrix)
+    new_matrix=rest_matrix
+    print(len(new_matrix))
+    print(help_student)
+    index=np.arange(len(help_student))
+    print(index)
+
+    count_student=0
+    for row in range(0,row_num):
+        if matched_student[row]==-1:
+            count_student+=1
+    return (new_matrix,matched_student,max,count_student,count_project)
 
 # -------------------------------------------------
 # Main function
@@ -133,12 +159,13 @@ def main():
     #initialize()
     max=[5]*col_num
     matched_student=[-1]*row_num
-    count=row_num
+    count_student=row_num
+    count_project=col_num
     i=0
     while(np.prod([a+1 for a in matched_student])==0):
-        (matched_matrix,matched_per_project)=munkres(matrix,max,row_num,col_num,count)
+        (matched_matrix,matched_per_project)=munkres(matrix,max,count_student,count_project)
     #Output_Data(matched_matrix)
-        (matrix,matched_student,max,count)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,row_num,col_num,i)
+        (matrix,matched_student,max,count_student,count_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,row_num,col_num,i)
         i+=1
         print(matched_student)
         print(i,"turn")

@@ -24,7 +24,6 @@ matched_per_student=np.zeros(row_num,dtype=int)
 matched_per_project=np.zeros(col_num,dtype=int)
 primed_uncovered_pair=[-1,-1]
 max_per_project=np.zeros(col_num)
-count=0
 # the tempory matching
 
 
@@ -138,7 +137,7 @@ def Step3():
         for col in range(0,col_num):
             if matched_matrix[row][col]==1:
                 Cover_Row(row)
-    if np.sum(matched_per_student)==count:
+    if np.sum(matched_per_student)==row_num:
         step = 7
     else:
         step = 4
@@ -221,7 +220,7 @@ steps = { 1: Step1,
           6: Step6}
 
 
-def munkres(original_matrix,max,row,col,counter):
+def munkres(original_matrix,max,row,col):
    '''
    the core munkres algorithm to match students with projects
 
@@ -234,20 +233,19 @@ def munkres(original_matrix,max,row,col,counter):
    matched_matrix: a 2D array where 1 represents a student successfully matches a project while 0 doesn't
    matched_per_project: an array about how many students match a certain project
    '''
-    global matrix,row_num,col_num,max_per_project,count
-    matrix=original_matrix
-    max_per_project=max
-    row_num=row
-    col_num=col
-    count=counter
-    initialize()
-    whether_Continue = True
-    step = 1
-    while (whether_Continue):
-        try:
-            Func=steps[step]
-            step=Func()
-        except KeyError:
-            whether_Continue=False
-    return (matched_matrix,matched_per_project)
+   global matrix,row_num,col_num,max_per_project
+   matrix=original_matrix
+   max_per_project=max
+   row_num=row
+   col_num=col
+   initialize()
+   whether_Continue = True
+   step = 1
+   while (whether_Continue):
+       try:
+           Func=steps[step]
+           step=Func()
+       except KeyError:
+           whether_Continue=False
+   return (matched_matrix,matched_per_project)
 
