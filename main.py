@@ -28,8 +28,8 @@ def Process_Data(data,row_num,col_num):
     original_matrix=data.astype('int')
     for row in range(0, row_num):
         for col in range(0, col_num):
-            if original_matrix[row][col] != 100:
-                original_matrix[row][col] *= original_matrix[row][col]
+            #if original_matrix[row][col] != 100:
+            original_matrix[row][col] *= original_matrix[row][col]
     matrix=original_matrix
     return (matrix,original_matrix0,original_matrix)
 
@@ -56,13 +56,18 @@ def Output(matched_student,original_matrix,row_num,col_num):
         result.append([number,project,preference])
     result=pd.DataFrame(result)
     result.to_csv("result.csv")
+    matched_per_project=[]
+    for col in range(col_num):
+        matched_per_project.append(matched_student.count(col))
+    print("matched_per_project",matched_per_project)
+
 
 
 
 # -------------------------------------------------
 # update students and project to be matched
 # -------------------------------------------------
-def Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i):
+def Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i,original_matrix0):
     '''
     process the result and assign students to projects after the matching process
 
@@ -83,7 +88,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     # projects enrolled below the lower limit will be eliminated,
     # and the lower limit is increased every five turns
     lower_limit=0
-    print(matched_per_project)
+    #print("matched_per_project:",matched_per_project)
     if i<2:
         lower_limit=1
         # for debugging temporarily
@@ -160,7 +165,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     for row in range(0,row_num):
         if matched_student[row]==-1:
             count_student+=1
-    Output(matched_student,original_matrix,row_num,col_num)
+    Output(matched_student,original_matrix0,row_num,col_num)
     return (new_matrix,matched_student,max,count_student,count_project,new_dic_student,new_dic_project)
 
 # -------------------------------------------------
@@ -182,10 +187,10 @@ def main():
     while(np.prod([a+1 for a in matched_student])==0 and i<10):
         (matched_matrix,matched_per_project)=munkres(matrix,max,count_student,count_project)
     #Output_Data(matched_matrix)
-        (matrix,matched_student,max,count_student,count_project,dic_student,dic_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i)
+        (matrix,matched_student,max,count_student,count_project,dic_student,dic_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i,original_matrix0)
         i+=1
-        print(matched_student)
-        print(matrix)
+        print("matched_student:",matched_student)
+        print("matrix:",matrix)
         print(i,"turn")
         print(dic_project)
     Output(matched_student,original_matrix0,row_num,col_num)
