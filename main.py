@@ -42,15 +42,14 @@ def Output_Data(data):
     data.to_csv("result.csv")
 '''
 
-def Post_Process(matched_matrix,original_matrix,row_num,col_num):
-    result = np.zeros((row_num, 3))
-    for row in range(0, row_num):
-        for col in range(0, col_num):
-            if matched_matrix[row][col] == 1:
-                result[row][0] = row + 1
-                result[row][1] = col + 1
-                result[row][2] = original_matrix[row][col]
-    result = pd.DataFrame(result)
+def Output(matched_student,original_matrix,row_num,col_num):
+    result=[]
+    for row in range(row_num):
+        number=row+1
+        project=matched_student[row]+1
+        preference=original_matrix[row][matched_student[row]]
+        result.append([number,project,preference])
+    result=pd.DataFrame(result)
     result.to_csv("result.csv")
 
 
@@ -119,8 +118,9 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
                     # for col2 in range(0,col_num):
                     #    matrix[row][col2]=100
             max[col]=1
-        #elif matched_per_project[col]+matched_student.count(dic_project[col])<=lower_limit:
-        #    max[col]=0
+        elif matched_per_project[col]+matched_student.count(dic_project[col])<=lower_limit:
+            max[col]=0
+            count_project -= 1
             # the project would be eliminated
         #    for row in range(0,row_num):
         #        matrix[row][col]=100
@@ -142,7 +142,6 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
                 help_matrix.extend(row[dic_project[col]+1:])
                 rest_matrix.append(help_matrix)
             new_matrix=rest_matrix
-    print("new_matrix1",new_matrix)
     index=np.arange(len(help_student))
     new_dic_student={order: student for order,student in zip(index,help_student)}
     help_project=[]
@@ -156,7 +155,6 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     for row in range(0,row_num):
         if matched_student[row]==-1:
             count_student+=1
-    print("new_matrix2",new_matrix)
     return (new_matrix,matched_student,max,count_student,count_project,new_dic_student,new_dic_project)
 
 # -------------------------------------------------
@@ -175,14 +173,16 @@ def main():
     index_project=np.arange(col_num)
     dic_project = {order: project for order, project in zip(index_project, index_project)}
     i=0
-    while(np.prod([a+1 for a in matched_student])==0):
+    while(np.prod([a+1 for a in matched_student])==0 and i<20):
         (matched_matrix,matched_per_project)=munkres(matrix,max,count_student,count_project)
     #Output_Data(matched_matrix)
         (matrix,matched_student,max,count_student,count_project,dic_student,dic_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i)
         i+=1
         print(matched_student)
+        print(matrix)
         print(i,"turn")
-    Post_Process(matched_matrix,original_matrix,row_num,col_num)
+    Output(matched_student,original_matrix,row_num,col_num)
+
 
 if __name__ == '__main__':
     main()
