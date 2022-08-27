@@ -132,16 +132,16 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
         if matched_student[row]==-1:
             new_matrix.append(original_matrix[row].tolist())
             help_student.append(row)
-    rest_matrix=[]
     help_matrix=[]
     for col in range(0,len(matched_per_project)):
         if max[col]==0:
+            rest_matrix = []
             for row in new_matrix:
                 #row=row.tolist()
                 help_matrix=row[:dic_project[col]]
                 help_matrix.extend(row[dic_project[col]+1:])
                 rest_matrix.append(help_matrix)
-    new_matrix=rest_matrix
+            new_matrix=rest_matrix
     print("new_matrix1",new_matrix)
     index=np.arange(len(help_student))
     new_dic_student={order: student for order,student in zip(index,help_student)}
