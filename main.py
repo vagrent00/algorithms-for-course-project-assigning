@@ -79,14 +79,14 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     # and the lower limit is increased every five turns
     lower_limit=0
     print(matched_per_project)
-    if i<5:
+    if i<2:
         lower_limit=1
         # for debugging temporarily
-    elif i<10:
+    elif i<4:
         lower_limit=1
-    elif i<15:
+    elif i<6:
         lower_limit=2
-    elif i<20:
+    elif i<8:
         lower_limit=3
 
     # modify the value to 100 for those that can't be matched
@@ -155,6 +155,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     for row in range(0,row_num):
         if matched_student[row]==-1:
             count_student+=1
+    Output(matched_student,original_matrix,row_num,col_num)
     return (new_matrix,matched_student,max,count_student,count_project,new_dic_student,new_dic_project)
 
 # -------------------------------------------------
@@ -173,7 +174,7 @@ def main():
     index_project=np.arange(col_num)
     dic_project = {order: project for order, project in zip(index_project, index_project)}
     i=0
-    while(np.prod([a+1 for a in matched_student])==0 and i<20):
+    while(np.prod([a+1 for a in matched_student])==0 and i<10):
         (matched_matrix,matched_per_project)=munkres(matrix,max,count_student,count_project)
     #Output_Data(matched_matrix)
         (matrix,matched_student,max,count_student,count_project,dic_student,dic_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i)
@@ -181,6 +182,7 @@ def main():
         print(matched_student)
         print(matrix)
         print(i,"turn")
+        print(dic_project)
     Output(matched_student,original_matrix,row_num,col_num)
 
 
