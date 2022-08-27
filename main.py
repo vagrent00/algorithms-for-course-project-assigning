@@ -58,7 +58,7 @@ def Post_Process(matched_matrix,original_matrix,row_num,col_num):
 # -------------------------------------------------
 # update students and project to be matched
 # -------------------------------------------------
-def Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,row_num,col_num,i):
+def Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i):
     '''
     process the result and assign students to projects after the matching process
 
@@ -79,6 +79,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     # projects enrolled below the lower limit will be eliminated,
     # and the lower limit is increased every five turns
     lower_limit=0
+    print(matched_per_project)
     if i<5:
         lower_limit=1
         # for debugging temporarily
@@ -94,30 +95,32 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     # in certain projects
     # reset the matrix to the original matrix
     matrix=original_matrix
-    count_project=col_num
-    for col in range(0,col_num):
-        if matched_per_project[col]==5:
+    count_project=len(matched_per_project)
+    for col in range(0,len(matched_per_project)):
+        if matched_per_project[col]+matched_student.count(dic_project[col])==5:
             # the project is full of people
             count_project-=1
-            for row in range(0,row_num):
+
+            for row in range(0,len(dic_student)):
                 if matched_matrix[row][col]==1:
-                    matched_student[row]=col
+                    matched_student[dic_student[row]]=dic_project[col]
                     # the student has been enrolled, and can't be enrolled in other projects
                     # for col2 in range(0,col_num):
                     #    matrix[row][col2]=100
                # matrix[row][col]=100
             # the project cannot enroll any more students
             max[col]=0
-        elif matched_per_project[col]==4:
+        elif matched_per_project[col]+matched_student.count(dic_project[col])==4:
             # the project can enroll at most one student
-            for row in range(0,row_num):
+            for row in range(0,len(dic_student)):
                 if matched_matrix[row][col]==1:
                 # enroll those matched students
-                    matched_student[row]=col
+                    matched_student[dic_student[row]]=dic_project[col]
                     # for col2 in range(0,col_num):
                     #    matrix[row][col2]=100
             max[col]=1
-        # elif matched_per_project[col]<=lower_limit:
+        #elif matched_per_project[col]+matched_student.count(dic_project[col])<=lower_limit:
+        #    max[col]=0
             # the project would be eliminated
         #    for row in range(0,row_num):
         #        matrix[row][col]=100
@@ -127,28 +130,34 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     help_student=[]
     for row in range(0,row_num):
         if matched_student[row]==-1:
-            new_matrix.append(original_matrix[row])
+            new_matrix.append(original_matrix[row].tolist())
             help_student.append(row)
     rest_matrix=[]
     help_matrix=[]
-    for col in range(0,col_num):
-        if matched_per_project[col]==5:
+    for col in range(0,len(matched_per_project)):
+        if max[col]==0:
             for row in new_matrix:
-                row=row.tolist()
-                help_matrix=row[:col]
-                help_matrix.extend(row[col+1:])
+                #row=row.tolist()
+                help_matrix=row[:dic_project[col]]
+                help_matrix.extend(row[dic_project[col]+1:])
                 rest_matrix.append(help_matrix)
     new_matrix=rest_matrix
-    print(len(new_matrix))
-    print(help_student)
+    print("new_matrix1",new_matrix)
     index=np.arange(len(help_student))
-    print(index)
-
+    new_dic_student={order: student for order,student in zip(index,help_student)}
+    help_project=[]
+    for col in range(0,len(matched_per_project)):
+        if max[col]>=1:
+            help_project.append(col)
+    index2=np.arange(len(help_project))
+    new_dic_project={order: project for order,project in zip(index2,help_project)}
+    max=list(filter((0).__ne__, max))
     count_student=0
     for row in range(0,row_num):
         if matched_student[row]==-1:
             count_student+=1
-    return (new_matrix,matched_student,max,count_student,count_project)
+    print("new_matrix2",new_matrix)
+    return (new_matrix,matched_student,max,count_student,count_project,new_dic_student,new_dic_project)
 
 # -------------------------------------------------
 # Main function
@@ -161,11 +170,15 @@ def main():
     matched_student=[-1]*row_num
     count_student=row_num
     count_project=col_num
+    index_student=np.arange(row_num)
+    dic_student = {order: student for order, student in zip(index_student,index_student)}
+    index_project=np.arange(col_num)
+    dic_project = {order: project for order, project in zip(index_project, index_project)}
     i=0
     while(np.prod([a+1 for a in matched_student])==0):
         (matched_matrix,matched_per_project)=munkres(matrix,max,count_student,count_project)
     #Output_Data(matched_matrix)
-        (matrix,matched_student,max,count_student,count_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,row_num,col_num,i)
+        (matrix,matched_student,max,count_student,count_project,dic_student,dic_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i)
         i+=1
         print(matched_student)
         print(i,"turn")

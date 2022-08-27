@@ -238,6 +238,9 @@ def munkres(original_matrix,max,row,col):
    max_per_project=max
    row_num=row
    col_num=col
+   print("row",row)
+   print("col",col)
+  # print(original_matrix)
    initialize()
    whether_Continue = True
    step = 1
