@@ -20,13 +20,18 @@ def Load_Data():
 def Process_Data(data,row_num,col_num):
     #are_nan=np.isnan(data)
     #data[are_nan]=100
-    for row in range(0,row_num):
-        for col in range(0,col_num):
-            if data[row][col]==' ':
-                data[row][col]=100
-    matrix=data.astype('int')
+    for row in range(0, row_num):
+        for col in range(0, col_num):
+            if data[row][col] == ' ':
+                data[row][col] = 100
+    original_matrix0=data.astype('int')
     original_matrix=data.astype('int')
-    return (matrix,original_matrix)
+    for row in range(0, row_num):
+        for col in range(0, col_num):
+            if original_matrix[row][col] != 100:
+                original_matrix[row][col] *= original_matrix[row][col]
+    matrix=original_matrix
+    return (matrix,original_matrix0,original_matrix)
 
     # -------------------------------------------------
     # Output data
@@ -163,7 +168,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
 # -------------------------------------------------
 def main():
     (data,row_num,col_num)=Load_Data()
-    (matrix,original_matrix)=Process_Data(data,row_num,col_num)
+    (matrix,original_matrix0,original_matrix)=Process_Data(data,row_num,col_num)
     #initialize()
     max=[5]*col_num
     matched_student=[-1]*row_num
@@ -183,7 +188,7 @@ def main():
         print(matrix)
         print(i,"turn")
         print(dic_project)
-    Output(matched_student,original_matrix,row_num,col_num)
+    Output(matched_student,original_matrix0,row_num,col_num)
 
 
 if __name__ == '__main__':
