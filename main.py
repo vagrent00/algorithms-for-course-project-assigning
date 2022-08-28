@@ -137,7 +137,6 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
             # the project would be eliminated
         #    for row in range(0,row_num):
         #        matrix[row][col]=100
-    print("original_matrix",original_matrix)
     # derive the matrix to be assigned
     new_matrix=[]
     help_student=[]
@@ -146,15 +145,23 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
             new_matrix.append(original_matrix[row].tolist())
             help_student.append(row)
     help_matrix=[]
-    for col in range(0,len(matched_per_project)):
-        if max[col]==0:
-            rest_matrix = []
-            for row in new_matrix:
+    for col in range(col_num):
+        #if col not in dic_project.values() or max[list(dic_project.keys())[list(dic_project.values()).index(col)]]==0:
+        if col in dic_project.values() and max[list(dic_project.keys())[list(dic_project.values()).index(col)]] >= 1:
+            #rest_matrix = []
+            if help_matrix==[]:
+                for row in new_matrix:
+                    help_matrix.append([row[col]])
+            else:
+                for row in range(len(help_student)):
+                    help_matrix[row].append(new_matrix[row][col])
+    new_matrix=help_matrix
                 #row=row.tolist()
-                help_matrix=row[:dic_project[col]]
-                help_matrix.extend(row[dic_project[col]+1:])
-                rest_matrix.append(help_matrix)
-            new_matrix=rest_matrix
+                #help_matrix=row[:col]
+                #help_matrix.extend(row[col+1:])
+                #rest_matrix.append(help_matrix)
+            #new_matrix=rest_matrix
+    new_matrix=np.array(new_matrix)
     index=np.arange(len(help_student))
     new_dic_student={order: student for order,student in zip(index,help_student)}
     help_project=[]
