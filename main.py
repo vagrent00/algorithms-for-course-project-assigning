@@ -26,11 +26,14 @@ def Process_Data(data,row_num,col_num):
                 data[row][col] = 100
     original_matrix0=data.astype('int')
     original_matrix=data.astype('int')
+    matrix=data.astype('int')
     for row in range(0, row_num):
         for col in range(0, col_num):
             #if original_matrix[row][col] != 100:
             original_matrix[row][col] *= original_matrix[row][col]
-    matrix=original_matrix
+    for row in range(row_num):
+        for col in range(col_num):
+            matrix[row][col]*=matrix[row][col]
     return (matrix,original_matrix0,original_matrix)
 
     # -------------------------------------------------
@@ -134,7 +137,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
             # the project would be eliminated
         #    for row in range(0,row_num):
         #        matrix[row][col]=100
-
+    print("original_matrix",original_matrix)
     # derive the matrix to be assigned
     new_matrix=[]
     help_student=[]
@@ -157,7 +160,7 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     help_project=[]
     for col in range(0,len(matched_per_project)):
         if max[col]>=1:
-            help_project.append(col)
+            help_project.append(dic_project[col])
     index2=np.arange(len(help_project))
     new_dic_project={order: project for order,project in zip(index2,help_project)}
     max=list(filter((0).__ne__, max))
@@ -166,6 +169,8 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
         if matched_student[row]==-1:
             count_student+=1
     Output(matched_student,original_matrix0,row_num,col_num)
+    print("dic_project",new_dic_project)
+    print("matrix",new_matrix)
     return (new_matrix,matched_student,max,count_student,count_project,new_dic_student,new_dic_project)
 
 # -------------------------------------------------
@@ -190,9 +195,7 @@ def main():
         (matrix,matched_student,max,count_student,count_project,dic_student,dic_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i,original_matrix0)
         i+=1
         print("matched_student:",matched_student)
-        print("matrix:",matrix)
         print(i,"turn")
-        print(dic_project)
     Output(matched_student,original_matrix0,row_num,col_num)
 
 
