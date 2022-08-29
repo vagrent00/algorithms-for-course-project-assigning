@@ -55,8 +55,12 @@ def Output(matched_student,original_matrix,row_num,col_num):
     for row in range(row_num):
         number=row+1
         project=matched_student[row]+1
-        preference=original_matrix[row][matched_student[row]]
+        if matched_student[row]==-1:
+            preference=1000
+        else:
+            preference=original_matrix[row][matched_student[row]]
         result.append([number,project,preference])
+    print("result",[a[2] for a in result])
     result=pd.DataFrame(result)
     result.to_csv("result.csv")
     matched_per_project=[]
@@ -92,15 +96,22 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
     # and the lower limit is increased every five turns
     lower_limit=0
     #print("matched_per_project:",matched_per_project)
-    if i<2:
-        lower_limit=1
+    if i<3:
+        lower_limit=0
         # for debugging temporarily
-    elif i<4:
-        lower_limit=1
     elif i<6:
+        lower_limit=1
+    elif i<9:
         lower_limit=2
-    elif i<8:
+    elif i<12:
         lower_limit=3
+
+    # eliminate those matching with low priority
+    for row in range(len(dic_student)):
+        for col in range(len(dic_project)):
+            if matched_matrix[row][col]==1 and original_matrix0[dic_student[row]][dic_project[col]]>5:
+                matched_matrix[row][col]=0
+
 
     # modify the value to 100 for those that can't be matched
     # when some projects are eliminated or the student is enrolled
@@ -176,7 +187,9 @@ def Update_matrix(max,matched_matrix,matched_per_project,matched_student,origina
         if matched_student[row]==-1:
             count_student+=1
     Output(matched_student,original_matrix0,row_num,col_num)
+    print("dic_student",new_dic_student)
     print("dic_project",new_dic_project)
+    print("max",max)
     print("matrix",new_matrix)
     return (new_matrix,matched_student,max,count_student,count_project,new_dic_student,new_dic_project)
 
@@ -196,7 +209,7 @@ def main():
     index_project=np.arange(col_num)
     dic_project = {order: project for order, project in zip(index_project, index_project)}
     i=0
-    while(np.prod([a+1 for a in matched_student])==0 and i<10):
+    while(np.prod([a+1 for a in matched_student])==0 and i<15):
         (matched_matrix,matched_per_project)=munkres(matrix,max,count_student,count_project)
     #Output_Data(matched_matrix)
         (matrix,matched_student,max,count_student,count_project,dic_student,dic_project)=Update_matrix(max,matched_matrix,matched_per_project,matched_student,original_matrix,dic_student,dic_project,row_num,col_num,i,original_matrix0)
