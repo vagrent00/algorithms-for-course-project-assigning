@@ -228,7 +228,6 @@ def munkres(original_matrix,max,row,col):
    :param max: an array that records the maximum students that a project can still enroll
    :param row: number of students
    :param col: number of projects
-   :param counter: the number of students that aren't enrolled in a project
    :return:
    matched_matrix: a 2D array where 1 represents a student successfully matches a project while 0 doesn't
    matched_per_project: an array about how many students match a certain project
@@ -240,7 +239,7 @@ def munkres(original_matrix,max,row,col):
    col_num=col
    print("row",row)
    print("col",col)
-  # print(original_matrix)
+   
    initialize()
    whether_Continue = True
    step = 1
