@@ -11,7 +11,7 @@ from assign import munkres
 # -------------------------------------------------
 
 def Load_Data():
-    data = pd.read_csv("data.csv")
+    data = pd.read_csv("data.csv")  # header=None, how to get this data.csv
     data = pd.DataFrame(data)
     data = np.array(data)
     (row_num, col_num) = np.shape(data)
@@ -25,17 +25,9 @@ def Process_Data(data, row_num, col_num):
                 data[row][col] = 100
     # same value currently, but used for different purposes
     original_matrix0 = data.astype('int')
-    original_matrix = data.astype('int')
-    matrix = data.astype('int')
     # square the preference value to punish low priority
-    for row in range(0, row_num):
-        for col in range(0, col_num):
-            # if original_matrix[row][col] != 100:
-            original_matrix[row][col] *= original_matrix[row][col]
-    for row in range(row_num):
-        for col in range(col_num):
-            matrix[row][col] *= matrix[row][col]
-    return matrix, original_matrix0, original_matrix
+    original_matrix = original_matrix0 ** 2
+    return original_matrix.copy(), original_matrix0, original_matrix
 
 
 # -------------------------------------------------
@@ -221,38 +213,27 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
 # -------------------------------------------------
 def main():
     # preprocess the data
-    (data, row_num, col_num) = Load_Data()
-    (matrix, original_matrix0, original_matrix) = Process_Data(data, row_num, col_num)
+    data, row_num, col_num = Load_Data()
+    matrix, original_matrix0, original_matrix = Process_Data(data, row_num, col_num)
 
     # initialize some variables
-    max = [5] * col_num
+    max = [5] * col_num  # [5, 5, ...]
     matched_student = [-1] * row_num
     count_student = row_num
     count_project = col_num
-    index_student = np.arange(row_num)
-    dic_student = {order: student for order, student in zip(index_student, index_student)}
-    index_project = np.arange(col_num)
-    dic_project = {order: project for order, project in zip(index_project, index_project)}
+    dic_student = {index: index for index in range(row_num)}  # {0: 0, 1: 1, 2: 2, ...}
+    dic_project = {index: index for index in range(col_num)}
     i = 0  # record the number of turns
 
     # the main loop
-    while np.prod([a + 1 for a in matched_student]) == 0 and i < 15:
+    while -1 in matched_student and i < 15:
         # first match students with projects by the munkres algorithm
-        (matched_matrix, matched_per_project) = munkres(matrix, max, count_student, count_project)
+        matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
         # then process the matching result.
         # assign students to corresponding project, discard some projects,
         # and leave the rest to the next matching process
-        (matrix, matched_student, max, count_student, count_project, dic_student, dic_project) = Update_matrix(max,
-                                                                                                               matched_matrix,
-                                                                                                               matched_per_project,
-                                                                                                               matched_student,
-                                                                                                               original_matrix,
-                                                                                                               dic_student,
-                                                                                                               dic_project,
-                                                                                                               row_num,
-                                                                                                               col_num,
-                                                                                                               i,
-                                                                                                               original_matrix0)
+        matrix, matched_student, max, count_student, count_project, dic_student, dic_project = Update_matrix(max, matched_matrix, matched_per_project, matched_student, original_matrix, dic_student, dic_project, row_num, col_num, i, original_matrix0)
+
         i += 1
         print("matched_student:", matched_student)
         print(i, "turn")
