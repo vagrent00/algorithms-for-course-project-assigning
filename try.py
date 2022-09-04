@@ -12,7 +12,9 @@ from assign import munkres
 # max = [5] * 17
 # print(zip(np.arange(10), np.arange(10)))
 # index_student = np.arange(62)
-matrix = np.array([[1, 2, 3], [2, 4, 6], [3, 6, 9]])
-max = [1, 1, 1]
-print(munkres(matrix, max, 3, 3)[1])
+# matrix = np.array([[1, 2, 3], [2, 4, 6], [3, 6, 9]])
+# max = [1, 1, 1]
+# print(munkres(matrix, max, 3, 3)[1])
+dic = {1: 'a', 2: 'v'}
+print(dic.values())
 

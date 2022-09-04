@@ -92,20 +92,15 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # eliminate those matching with low priority
     for row in range(len(dic_student)):
         for col in range(len(dic_project)):
-            if matched_matrix[row][col] == 1 and original_matrix0[dic_student[row]][dic_project[col]] > 5:
+            if matched_matrix[row][col] == 1 and original_matrix0[dic_student[row]][dic_project[col]] > 5:  # TODO: find the best hyperparameter
                 matched_matrix[row][col] = 0
 
     # projects enrolled below the lower limit will be eliminated,
     # and the lower limit is increased every three turns
     lower_limit = 0
-    if i < 3:
-        lower_limit = 0
-    elif i < 6:
-        lower_limit = 1
-    elif i < 9:
-        lower_limit = 2
-    elif i < 12:
-        lower_limit = 3
+
+    if i < 12:
+        lower_limit = i // 3  # TODO: when round exceeds 12, 可能会死循环(无意义地持续到15回合)，因为不会有project被discard。是不是把12之后的limit全部设成3比较好，并且第九轮就是3是不是有点早。
 
     # -------------------------------------------------
     # 2. For projects that are full of people, assign students to
@@ -120,7 +115,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # traverse every project in the matching process
     count_project = len(matched_per_project)
     for col in range(0, len(matched_per_project)):
-        if matched_per_project[col] + matched_student.count(dic_project[col]) == 5:
+        if matched_per_project[col] + matched_student.count(dic_project[col]) == 5:  # TODO: dedicated to the upper limit 5 for each project
             # the project is full of people
             count_project -= 1
 
