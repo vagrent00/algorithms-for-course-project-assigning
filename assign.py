@@ -258,8 +258,12 @@ def munkres(original_matrix, max, row, col):
     initialize()
     whether_Continue = True
     step = 1
+    count=0
     while whether_Continue:
         try:
+            count+=1
+            if count>500:
+                break
             Func = steps[step]
             step = Func()
         except KeyError:
