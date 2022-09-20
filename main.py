@@ -11,7 +11,7 @@ from assign import munkres
 # -------------------------------------------------
 
 def Load_Data():
-    data = pd.read_csv("data.csv")  # header=None, how to get this data.csv
+    data = pd.read_csv("data/data.csv")  # header=None, how to get this data.csv
     data = pd.DataFrame(data)
     data = np.array(data)
     (row_num, col_num) = np.shape(data)
@@ -27,6 +27,8 @@ def Process_Data(data, row_num, col_num):
     original_matrix0 = data.astype('int')
     # square the preference value to punish low priority
     original_matrix = original_matrix0 ** 2
+    student_info =
+    project_info =
     return original_matrix.copy(), original_matrix0, original_matrix
 
 
