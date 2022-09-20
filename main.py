@@ -103,7 +103,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     lower_limit = 0
 
     if i < 12:
-        lower_limit = i // 3  # TODO: when round exceeds 12, 可能会死循环(无意义地持续到15回合)，因为不会有project被discard。是不是把12之后的limit全部设成3比较好，并且第九轮就是3是不是有点早。
+        lower_limit = i // 3
 
     # -------------------------------------------------
     # 2. For projects that are full of people, assign students to
@@ -112,18 +112,19 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # discard the projects and leave students to the next turn for matching.
     # -------------------------------------------------
 
-    # reset the matrix to the original matrix
-    matrix = original_matrix
+    discard_num = 0  # the number of projects whose enrollment is less than the lower limit
+    discard_col = []  # the column number of potential discards
+    discard_info = []  # enrollment of potential discards
 
     # traverse every project in the matching process
     count_project = len(matched_per_project)
-    for col in range(0, len(matched_per_project)):
+    for col in range(count_project):
         if matched_per_project[col] + matched_student.count(
-                dic_project[col]) == 5:  # TODO: dedicated to the upper limit 5 for each project
+                dic_project[col]) == 5:
             # the project is full of people
             count_project -= 1
 
-            for row in range(0, len(dic_student)):
+            for row in range(len(dic_student)):
                 if matched_matrix[row][col] == 1:
                     # the student has been enrolled, and can't be enrolled in other projects
                     matched_student[dic_student[row]] = dic_project[col]
@@ -131,15 +132,25 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
             max[col] = 0
         elif matched_per_project[col] + matched_student.count(dic_project[col]) == 4:
             # the project can enroll at most one student
-            for row in range(0, len(dic_student)):
+            for row in range(len(dic_student)):
                 if matched_matrix[row][col] == 1:
                     # enroll those matched students
                     matched_student[dic_student[row]] = dic_project[col]
             max[col] = 1
         elif matched_per_project[col] + matched_student.count(dic_project[col]) <= lower_limit:
             # Because the projects have too few people, they would be discarded.
-            max[col] = 0
-            count_project -= 1
+            discard_num += 1
+            discard_col.append(col)
+            discard_info.append(matched_per_project[col] + matched_student.count(dic_project[col]))
+
+    # discarding project
+    if discard_num == 1:
+        max[discard_col[0]] = 0
+        count_project -= 1
+
+    elif discard_num > 1:
+        max[discard_col[discard_info.index(min(discard_info))]] = 0
+        count_project -= 1
 
     # -------------------------------------------------
     # 3. derive the matrix to be assigned
@@ -150,7 +161,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     help_student = []  # the rest students
 
     # remove students already assigned to a project
-    for row in range(0, row_num):
+    for row in range(row_num):
         if matched_student[row] == -1:
             new_matrix.append(original_matrix[row].tolist())
             help_student.append(row)
@@ -222,6 +233,7 @@ def main():
     dic_student = {index: index for index in range(row_num)}  # {0: 0, 1: 1, 2: 2, ...}
     dic_project = {index: index for index in range(col_num)}
     i = 0  # record the number of turns
+    target_project_num = row_num // 4  # record the number of loosely chosen projects
 
     # the main loop
     while -1 in matched_student and i < 15:
