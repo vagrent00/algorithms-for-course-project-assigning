@@ -10,26 +10,27 @@ from assign import munkres
 # Load and preprocess data
 # -------------------------------------------------
 
-def Load_Data():
-    data = pd.read_csv("data/data.csv")  # header=None, how to get this data.csv
-    data = pd.DataFrame(data)
-    data = np.array(data)
-    (row_num, col_num) = np.shape(data)
-    return data, row_num, col_num
-
-
-def Process_Data(data, row_num, col_num):
-    for row in range(0, row_num):
-        for col in range(0, col_num):
+def Process_Data():
+    # TODO: convert the original excel file into these three csv files
+    data: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/data.csv')))
+    student_info: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/student.csv', header=None)))
+    project_info: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/project.csv', header=None)))
+    row_num, col_num = data.shape
+    for row in range(row_num):
+        for col in range(col_num):
             if data[row][col] == ' ':
                 data[row][col] = 100
+    for row in range(project_info.shape[0]):
+        for col in range(project_info.shape[1]):
+            if not 0 <= project_info[row][col] <= 100:
+                project_info[row][col] = 0
     # same value currently, but used for different purposes
     original_matrix0 = data.astype('int')
     # square the preference value to punish low priority
     original_matrix = original_matrix0 ** 2
-    student_info =
-    project_info =
-    return original_matrix.copy(), original_matrix0, original_matrix
+    student_info = student_info.astype('int')
+    project_info = project_info.astype('int')
+    return original_matrix.copy(), original_matrix0, original_matrix, student_info, project_info, row_num, col_num
 
 
 # -------------------------------------------------
@@ -117,7 +118,8 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # traverse every project in the matching process
     count_project = len(matched_per_project)
     for col in range(0, len(matched_per_project)):
-        if matched_per_project[col] + matched_student.count(dic_project[col]) == 5:  # TODO: dedicated to the upper limit 5 for each project
+        if matched_per_project[col] + matched_student.count(
+                dic_project[col]) == 5:  # TODO: dedicated to the upper limit 5 for each project
             # the project is full of people
             count_project -= 1
 
@@ -210,8 +212,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
 # -------------------------------------------------
 def main():
     # preprocess the data
-    data, row_num, col_num = Load_Data()
-    matrix, original_matrix0, original_matrix = Process_Data(data, row_num, col_num)
+    matrix, original_matrix0, original_matrix, student_info, project_info, row_num, col_num = Process_Data()
 
     # initialize some variables
     max = [5] * col_num  # [5, 5, ...]
@@ -229,7 +230,16 @@ def main():
         # then process the matching result.
         # assign students to corresponding project, discard some projects,
         # and leave the rest to the next matching process
-        matrix, matched_student, max, count_student, count_project, dic_student, dic_project = Update_matrix(max, matched_matrix, matched_per_project, matched_student, original_matrix, dic_student, dic_project, row_num, col_num, i, original_matrix0)
+        matrix, matched_student, max, count_student, count_project, dic_student, dic_project = Update_matrix(max,
+                                                                                                             matched_matrix,
+                                                                                                             matched_per_project,
+                                                                                                             matched_student,
+                                                                                                             original_matrix,
+                                                                                                             dic_student,
+                                                                                                             dic_project,
+                                                                                                             row_num,
+                                                                                                             col_num, i,
+                                                                                                             original_matrix0)
 
         i += 1
         print("matched_student:", matched_student)
