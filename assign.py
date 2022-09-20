@@ -124,7 +124,6 @@ def Step1():
                 min = matrix[row][col]
         for row in range(0, row_num):
             matrix[row][col] -= min
-    print(1)
     return 2
 
 
@@ -137,7 +136,6 @@ def Step2():
                 matched_matrix[row][col] = 1
                 matched_per_student[row] += 1
                 matched_per_project[col] += 1
-    print(2)
     return 3
 
 
@@ -152,13 +150,11 @@ def Step3():
         step = 7
     else:
         step = 4
-    print(3)
     return step
 
 
 def Step4():
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
-    print(4)
 
     while Noncovered_Zero():
         for row in range(0, row_num):
@@ -201,7 +197,6 @@ def Step5():
         matched_per_student[row] -= 1
         matched_per_project[col] -= 1
     Clear_Notation()
-    print(5)
     return 3
 
 
@@ -220,7 +215,6 @@ def Step6():
         if covered_column[col] == 1:
             for row in range(0, row_num):
                 matrix[row][col] += min
-    print(6)
     return 4
 
 
