@@ -62,7 +62,7 @@ def Output(matched_student, original_matrix, row_num, col_num):
 # update students and project to be matched
 # -------------------------------------------------
 def Update_matrix(max, matched_matrix, matched_per_project, matched_student, original_matrix, dic_student, dic_project,
-                  row_num, col_num, i, original_matrix0, discarded_projects):
+                  row_num, col_num, i, original_matrix0, discarded_projects, tolerance):
     """
     process the result and assign students to projects after the matching process
 
@@ -78,6 +78,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     :param i: the ith loop
     :param original_matrix0: the original matrix without any process, used for final result
     :param discarded_projects: the column index of discarded projects
+    :param tolerance: the highest cost that will not be removed
     :return:
     new_matrix: updated students' preference matrix that is used in the next matching process
     matched_student: an array about the project number that a certain student is enrolled
@@ -96,7 +97,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # eliminate those matching with low priority
     for row in range(len(dic_student)):
         for col in range(len(dic_project)):
-            if matched_matrix[row][col] == 1 and original_matrix0[dic_student[row]][dic_project[col]] > 5:  # TODO: find the best hyperparameter
+            if matched_matrix[row][col] == 1 and original_matrix0[dic_student[row]][dic_project[col]] > tolerance:  # TODO: find the best hyperparameter
                 matched_matrix[row][col] = 0
 
     # projects enrolled below the lower limit will be eliminated,
@@ -105,6 +106,8 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
 
     if i < 12:
         lower_limit = i // 3
+    elif i >= 100:
+        lower_limit = -1  # some special round don't need to discard projects
 
     # -------------------------------------------------
     # 2. For projects that are full of people, assign students to
@@ -120,8 +123,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # traverse every project in the matching process
     count_project = len(matched_per_project)
     for col in range(count_project):
-        if matched_per_project[col] + matched_student.count(
-                dic_project[col]) == 5:
+        if matched_per_project[col] + matched_student.count(dic_project[col]) == 5:
             # the project is full of people
             count_project -= 1
 
@@ -143,6 +145,15 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
             discard_num += 1
             discard_col.append(col)
             discard_info.append(matched_per_project[col] + matched_student.count(dic_project[col]))
+
+        elif i >= 100:  # special round need to register students even if the projects are not full
+            for row in range(len(dic_student)):
+                if matched_matrix[row][col] == 1:
+                    # enroll those matched students
+                    matched_student[dic_student[row]] = dic_project[col]
+                    max[col] -= 1
+            if max[col] == 0:
+                count_project -= 1
 
     # discarding project
     if discard_num == 1:
@@ -256,7 +267,7 @@ def main():
             dic_project,
             row_num,
             col_num, i,
-            original_matrix0, discarded_projects)
+            original_matrix0, discarded_projects, 5)
 
         i += 1
         print("matched_student:", matched_student)
@@ -272,10 +283,12 @@ def main():
     curr_slot = 0
     slot_project_correspondence = {}
     major_assignment_matrix = []
+    remained_project = []
 
     for col in range(col_num):
-        total_major_requirement_per_project.append(project_info[1, col] + project_info[2, col] + project_info[3, col])
         if col not in discarded_projects:
+            total_major_requirement_per_project.append(project_info[1, col] + project_info[2, col] + project_info[3, col])
+            remained_project.append(col)
             for major in 0, 1, 2:
                 if not project_info[major + 1, col] == 0:
                     for i in range(project_info[major + 1, col]):
@@ -292,13 +305,30 @@ def main():
     major_assignment_matrix = np.array(major_assignment_matrix)
     matched_matrix, matched_per_student = munkres(major_assignment_matrix, [1] * row_num, major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
 
-    # update the assignment info
-    matched_student = [-1] * row_num
+    formatted_matched_matrix = np.zeros((row_num, col_num - len(discarded_projects)), dtype=int)
+    dic_project = {}
+
+    for i in range(col_num - len(discarded_projects)):
+        dic_project[i] = remained_project[i]
+
+    # format the new matched_matrix to the original format
     for i in range(row_num):
-        if matched_per_student[i] == 1:
-            pass
+        for j in range(major_assignment_matrix.shape[0]):
+            if matched_matrix[j, i]:
+                formatted_matched_matrix[i, remained_project.index(slot_project_correspondence[j])] = 1
 
-
+    print('total_major_requirement_per_project', total_major_requirement_per_project)
+    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+        [5] * (col_num - len(discarded_projects)),
+        formatted_matched_matrix,
+        total_major_requirement_per_project,
+        [-1] * row_num,
+        original_matrix,
+        {index: index for index in range(row_num)},
+        dic_project,
+        row_num,
+        col_num, 100,
+        original_matrix0, discarded_projects, 20)
 
 
 if __name__ == '__main__':
