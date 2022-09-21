@@ -232,7 +232,8 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     return new_matrix, matched_student, max, count_student, count_project, new_dic_student, new_dic_project, discarded_projects
 
 
-def major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0):
+def major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix,
+                     original_matrix0):
     total_major_requirement_per_project = []
     curr_slot = 0
     slot_project_correspondence = {}
@@ -312,15 +313,17 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
         dic_project,
         row_num,
         col_num, 9,
-        original_matrix0, discarded_projects, 9)
+        original_matrix0, discarded_projects, 5)
     print('new turn')
     print('discarded_projects', discarded_projects)
 
     return discarded_projects, matched_student
 
+
 # -------------------------------------------------
 # Main function
 # -------------------------------------------------
+
 def main():
     # preprocess the data
     matrix, original_matrix0, original_matrix, student_info, project_info, row_num, col_num = Process_Data()

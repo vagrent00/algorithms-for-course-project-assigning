@@ -157,7 +157,7 @@ def Step4():
     loop_num = 0
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
 
-    while Noncovered_Zero() and loop_num < 100:
+    while Noncovered_Zero() and loop_num < 30:
         for row in range(0, row_num):
             for col in range(0, col_num):
                 if matrix[row][col] == 0 and covered_matrix[row][col] == 0:
@@ -182,7 +182,7 @@ def Step5():
     row_loc = primed_uncovered_pair[0]
     col_loc = primed_uncovered_pair[1]
     star_series.append([row_loc, col_loc])
-    while Find_Starred_Row(row_loc) != -1 and loop_num <= 100:
+    while Find_Starred_Row(row_loc) != -1 and loop_num <= 30:
         col = Find_Starred_Row(row_loc)
         unstar_series.append([row_loc, col])
         row_loc = Find_Primed_Column(col)
