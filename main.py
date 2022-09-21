@@ -275,7 +275,7 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
                 formatted_matched_matrix[i, remained_project.index(slot_project_correspondence[j])] = 1
 
     print('total_major_requirement_per_project', total_major_requirement_per_project)
-    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+    matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = Update_matrix(
         [5] * (col_num - len(discarded_projects)),
         formatted_matched_matrix,
         total_major_requirement_per_project,
@@ -288,18 +288,18 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
         original_matrix0, discarded_projects, 10000)
 
     # do the assignment once after the major requirements are satisfied
-    matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
+    matched_matrix, matched_per_project = munkres(matrix0, max0, count_student0, count_project0)
     matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
-        max,
+        max0,
         matched_matrix,
         matched_per_project,
-        matched_student,
+        matched_student0,
         original_matrix,
-        dic_student,
-        dic_project,
+        dic_student0,
+        dic_project0,
         row_num,
         col_num, 100,
-        original_matrix0, discarded_projects, 9)
+        original_matrix0, discarded_projects0, 9)
 
     # do the assignment once more, and one project will be discarded
     matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
@@ -317,7 +317,44 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
     print('new turn')
     print('discarded_projects', discarded_projects)
 
-    return discarded_projects, matched_student
+    return discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0
+
+
+def offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num):
+    dic_project = {}
+    remained_project = []
+    index = 0
+    problematic_projects = []
+    problematic_projects_students = []
+
+    for i in range(col_num):
+        if i not in discarded_projects:
+            dic_project[index] = i
+            remained_project.append(i)
+            index += 1
+
+    for project in remained_project:
+        student_list = []
+        num_offline = 0
+        for i in range(row_num):
+            if matched_student[i] == project:
+                if student_info[i, 2] == 1:
+                    num_offline += 1
+                else:
+                    student_list.append(i)
+
+        if num_offline < project_info[4, project]:
+            print(f'project {project} has no enough offline student!')
+            problematic_projects.append(project)
+            problematic_projects_students.append(student_list)
+            print(student_list)
+
+    if problematic_projects:
+        is_offline_satisfied = False
+    else:
+        is_offline_satisfied = True
+
+    return problematic_projects, problematic_projects_students, is_offline_satisfied
 
 
 # -------------------------------------------------
@@ -367,11 +404,35 @@ def main():
     Output(matched_student, original_matrix0, row_num, col_num)
     print("loose selection finished")
     discard_num = len(discarded_projects)
-    discarded_projects, matched_student = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
+    discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
     while not len(discarded_projects) == discard_num:
         discard_num = len(discarded_projects)
-        discarded_projects, matched_student = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
+        discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
+
+    problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
+    while not is_offline_satisfied:
+        for i in range(len(problematic_projects)):
+            for j in range(matrix0.shape[1]):
+                if dic_project0[j] == problematic_projects[i]:
+                    for ii in range(matrix0.shape[0]):
+                        if dic_student0[ii] in problematic_projects_students[i]:
+                            matrix0[ii, j] += 10
+
+        matched_matrix, matched_per_project = munkres(matrix0, max0, count_student0, count_project0)
+        matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+            max0,
+            matched_matrix,
+            matched_per_project,
+            matched_student0,
+            original_matrix,
+            dic_student0,
+            dic_project0,
+            row_num,
+            col_num, 100,
+            original_matrix0, discarded_projects0, 10)
+
+        problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
 
 
 if __name__ == '__main__':
