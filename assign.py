@@ -116,6 +116,7 @@ def Noncovered_Zero():
 # Main steps
 # -------------------------------------------------
 def Step1():
+    print(1)
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
     for col in range(0, col_num):
         min = matrix[0][col]
@@ -128,6 +129,7 @@ def Step1():
 
 
 def Step2():
+    print(2)
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
     for row in range(0, row_num):
         for col in range(0, col_num):
@@ -140,6 +142,7 @@ def Step2():
 
 
 def Step3():
+    print(3)
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
 
     for row in range(0, row_num):
@@ -154,9 +157,11 @@ def Step3():
 
 
 def Step4():
+    print('4 prior')
+    loop_num = 0
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
 
-    while Noncovered_Zero():
+    while Noncovered_Zero() and loop_num < 100:
         for row in range(0, row_num):
             for col in range(0, col_num):
                 if matrix[row][col] == 0 and covered_matrix[row][col] == 0:
@@ -169,10 +174,13 @@ def Step4():
                             if matched_matrix[row][col] == 1:
                                 Uncover_Row(row)
                         Cover_Col(col)
+        loop_num += 1
+    print('4 end')
     return 6
 
 
 def Step5():
+    print(5)
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
     star_series = []
     unstar_series = []
@@ -201,6 +209,7 @@ def Step5():
 
 
 def Step6():
+    print('6 prior')
     global row_num, col_num, covered_row, covered_column, covered_matrix, primed_matrix, matched_matrix, matched_per_student, matched_per_project, primed_uncovered_pair
     min = 100
     for row in range(0, row_num):
@@ -215,6 +224,7 @@ def Step6():
         if covered_column[col] == 1:
             for row in range(0, row_num):
                 matrix[row][col] += min
+    print('6 end')
     return 4
 
 

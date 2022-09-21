@@ -303,7 +303,7 @@ def main():
                         curr_slot += 1
 
     major_assignment_matrix = np.array(major_assignment_matrix)
-    matched_matrix, matched_per_student = munkres(major_assignment_matrix, [1] * row_num, major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
+    matched_matrix, matched_per_student = munkres(major_assignment_matrix.copy(), [1] * row_num, major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
 
     formatted_matched_matrix = np.zeros((row_num, col_num - len(discarded_projects)), dtype=int)
     dic_project = {}
@@ -328,7 +328,36 @@ def main():
         dic_project,
         row_num,
         col_num, 100,
-        original_matrix0, discarded_projects, 20)
+        original_matrix0, discarded_projects, 10000)
+
+    matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
+    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+        max,
+        matched_matrix,
+        matched_per_project,
+        matched_student,
+        original_matrix,
+        dic_student,
+        dic_project,
+        row_num,
+        col_num, 100,
+        original_matrix0, discarded_projects, 9)
+
+    for i in range(2):  # TODO: remove the assignments of major assigned students of deleted projects
+        matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
+        matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+            max,
+            matched_matrix,
+            matched_per_project,
+            matched_student,
+            original_matrix,
+            dic_student,
+            dic_project,
+            row_num,
+            col_num, 9,
+            original_matrix0, discarded_projects, 9)
+        print('new turn', i)
+        print('discarded_projects', discarded_projects)
 
 
 if __name__ == '__main__':
