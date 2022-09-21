@@ -232,6 +232,92 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     return new_matrix, matched_student, max, count_student, count_project, new_dic_student, new_dic_project, discarded_projects
 
 
+def major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0):
+    total_major_requirement_per_project = []
+    curr_slot = 0
+    slot_project_correspondence = {}
+    major_assignment_matrix = []
+    remained_project = []
+
+    for col in range(col_num):
+        if col not in discarded_projects:
+            total_major_requirement_per_project.append(
+                project_info[1, col] + project_info[2, col] + project_info[3, col])
+            remained_project.append(col)
+            for major in 0, 1, 2:
+                if not project_info[major + 1, col] == 0:
+                    for i in range(project_info[major + 1, col]):
+                        row = [0] * row_num
+                        for j in range(row_num):
+                            if not student_info[j, 1] == major:
+                                row[j] = 10000
+                            else:
+                                row[j] = original_matrix[j, col]
+                        major_assignment_matrix.append(row)
+                        slot_project_correspondence[curr_slot] = col
+                        curr_slot += 1
+
+    major_assignment_matrix = np.array(major_assignment_matrix)
+    matched_matrix, matched_per_student = munkres(major_assignment_matrix.copy(), [1] * row_num,
+                                                  major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
+
+    formatted_matched_matrix = np.zeros((row_num, col_num - len(discarded_projects)), dtype=int)
+    dic_project = {}
+
+    for i in range(col_num - len(discarded_projects)):
+        dic_project[i] = remained_project[i]
+
+    # format the new matched_matrix to the original format
+    for i in range(row_num):
+        for j in range(major_assignment_matrix.shape[0]):
+            if matched_matrix[j, i]:
+                formatted_matched_matrix[i, remained_project.index(slot_project_correspondence[j])] = 1
+
+    print('total_major_requirement_per_project', total_major_requirement_per_project)
+    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+        [5] * (col_num - len(discarded_projects)),
+        formatted_matched_matrix,
+        total_major_requirement_per_project,
+        [-1] * row_num,
+        original_matrix,
+        {index: index for index in range(row_num)},
+        dic_project,
+        row_num,
+        col_num, 100,
+        original_matrix0, discarded_projects, 10000)
+
+    # do the assignment once after the major requirements are satisfied
+    matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
+    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+        max,
+        matched_matrix,
+        matched_per_project,
+        matched_student,
+        original_matrix,
+        dic_student,
+        dic_project,
+        row_num,
+        col_num, 100,
+        original_matrix0, discarded_projects, 9)
+
+    # do the assignment once more, and one project will be discarded
+    matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
+    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+        max,
+        matched_matrix,
+        matched_per_project,
+        matched_student,
+        original_matrix,
+        dic_student,
+        dic_project,
+        row_num,
+        col_num, 9,
+        original_matrix0, discarded_projects, 9)
+    print('new turn')
+    print('discarded_projects', discarded_projects)
+
+    return discarded_projects, matched_student
+
 # -------------------------------------------------
 # Main function
 # -------------------------------------------------
@@ -277,87 +363,12 @@ def main():
     # Output the result
     Output(matched_student, original_matrix0, row_num, col_num)
     print("loose selection finished")
+    discard_num = len(discarded_projects)
+    discarded_projects, matched_student = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
-    # assign students to the major requirements of projects
-    total_major_requirement_per_project = []
-    curr_slot = 0
-    slot_project_correspondence = {}
-    major_assignment_matrix = []
-    remained_project = []
-
-    for col in range(col_num):
-        if col not in discarded_projects:
-            total_major_requirement_per_project.append(project_info[1, col] + project_info[2, col] + project_info[3, col])
-            remained_project.append(col)
-            for major in 0, 1, 2:
-                if not project_info[major + 1, col] == 0:
-                    for i in range(project_info[major + 1, col]):
-                        row = [0] * row_num
-                        for j in range(row_num):
-                            if not student_info[j, 1] == major:
-                                row[j] = 10000
-                            else:
-                                row[j] = original_matrix[j, col]
-                        major_assignment_matrix.append(row)
-                        slot_project_correspondence[curr_slot] = col
-                        curr_slot += 1
-
-    major_assignment_matrix = np.array(major_assignment_matrix)
-    matched_matrix, matched_per_student = munkres(major_assignment_matrix.copy(), [1] * row_num, major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
-
-    formatted_matched_matrix = np.zeros((row_num, col_num - len(discarded_projects)), dtype=int)
-    dic_project = {}
-
-    for i in range(col_num - len(discarded_projects)):
-        dic_project[i] = remained_project[i]
-
-    # format the new matched_matrix to the original format
-    for i in range(row_num):
-        for j in range(major_assignment_matrix.shape[0]):
-            if matched_matrix[j, i]:
-                formatted_matched_matrix[i, remained_project.index(slot_project_correspondence[j])] = 1
-
-    print('total_major_requirement_per_project', total_major_requirement_per_project)
-    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
-        [5] * (col_num - len(discarded_projects)),
-        formatted_matched_matrix,
-        total_major_requirement_per_project,
-        [-1] * row_num,
-        original_matrix,
-        {index: index for index in range(row_num)},
-        dic_project,
-        row_num,
-        col_num, 100,
-        original_matrix0, discarded_projects, 10000)
-
-    matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
-    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
-        max,
-        matched_matrix,
-        matched_per_project,
-        matched_student,
-        original_matrix,
-        dic_student,
-        dic_project,
-        row_num,
-        col_num, 100,
-        original_matrix0, discarded_projects, 9)
-
-    for i in range(2):  # TODO: remove the assignments of major assigned students of deleted projects
-        matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
-        matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
-            max,
-            matched_matrix,
-            matched_per_project,
-            matched_student,
-            original_matrix,
-            dic_student,
-            dic_project,
-            row_num,
-            col_num, 9,
-            original_matrix0, discarded_projects, 9)
-        print('new turn', i)
-        print('discarded_projects', discarded_projects)
+    while not len(discarded_projects) == discard_num:
+        discard_num = len(discarded_projects)
+        discarded_projects, matched_student = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
 
 if __name__ == '__main__':
