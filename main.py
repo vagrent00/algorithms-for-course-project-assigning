@@ -282,7 +282,9 @@ def main():
                         row = [0] * row_num
                         for j in range(row_num):
                             if not student_info[j, 1] == major:
-                                row[j] = 100
+                                row[j] = 10000
+                            else:
+                                row[j] = original_matrix[j, col]
                         major_assignment_matrix.append(row)
                         slot_project_correspondence[curr_slot] = col
                         curr_slot += 1
