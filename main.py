@@ -48,14 +48,14 @@ def Output(matched_student, original_matrix, row_num, col_num):
         else:
             preference = original_matrix[row][matched_student[row]]
         result.append([number, project, preference])
-    print("result", [a[2] for a in result])
+    # print("result", [a[2] for a in result])
     result = pd.DataFrame(result)
     # the result shows the projects students are assigned to and the preference
     result.to_csv("result.csv")
     matched_per_project = []
     for col in range(col_num):
         matched_per_project.append(matched_student.count(col))
-    print("matched_per_project", matched_per_project)
+    # print("matched_per_project", matched_per_project)
 
 
 # -------------------------------------------------
@@ -225,10 +225,10 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # -------------------------------------------------
 
     Output(matched_student, original_matrix0, row_num, col_num)
-    print("dic_student", new_dic_student)
-    print("dic_project", new_dic_project)
-    print("max", max)
-    print("matrix", new_matrix)
+    # print("dic_student", new_dic_student)
+    # print("dic_project", new_dic_project)
+    # print("max", max)
+    # print("matrix", new_matrix)
     return new_matrix, matched_student, max, count_student, count_project, new_dic_student, new_dic_project, discarded_projects
 
 
@@ -274,7 +274,7 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
             if matched_matrix[j, i]:
                 formatted_matched_matrix[i, remained_project.index(slot_project_correspondence[j])] = 1
 
-    print('total_major_requirement_per_project', total_major_requirement_per_project)
+    # print('total_major_requirement_per_project', total_major_requirement_per_project)
     matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = Update_matrix(
         [5] * (col_num - len(discarded_projects)),
         formatted_matched_matrix,
@@ -286,8 +286,8 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
         row_num,
         col_num, 100,
         original_matrix0, discarded_projects, 10000)
-    print('matched_student0 in major assignment', matched_student0)
-    print('max0 in major assignment', max0)
+    # print('matched_student0 in major assignment', matched_student0)
+    # print('max0 in major assignment', max0)
 
     # do the assignment once after the major requirements are satisfied
     matched_matrix, matched_per_project = munkres(matrix0.copy(), max0, count_student0, count_project0)
@@ -316,8 +316,8 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
         row_num,
         col_num, 9,
         original_matrix0, discarded_projects, 5)
-    print('new turn')
-    print('discarded_projects', discarded_projects)
+    # print('new turn')
+    # print('discarded_projects', discarded_projects)
 
     return discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0
 
@@ -346,10 +346,10 @@ def offline_test(discarded_projects, matched_student, student_info, project_info
                     student_list.append(i)
 
         if num_offline < project_info[4, project]:
-            print(f'project {project} has no enough offline student!')
+            # print(f'project {project} has no enough offline student!')
             problematic_projects.append(project)
             problematic_projects_students.append(student_list)
-            print(student_list)
+            # print(student_list)
 
     if problematic_projects:
         is_offline_satisfied = False
@@ -398,13 +398,13 @@ def main():
             original_matrix0, discarded_projects, 5)
 
         i += 1
-        print("matched_student:", matched_student)
-        print("discarded", discarded_projects)
-        print(i, "turn")
+        # print("matched_student:", matched_student)
+        # print("discarded", discarded_projects)
+        # print(i, "turn")
 
     # Output the result
-    Output(matched_student, original_matrix0, row_num, col_num)
-    print("loose selection finished")
+    # Output(matched_student, original_matrix0, row_num, col_num)
+    # print("loose selection finished")
     discard_num = len(discarded_projects)
     discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
@@ -412,9 +412,9 @@ def main():
         discard_num = len(discarded_projects)
         discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
-    print('matched_student0', matched_student0)
-    print('matrix0', matrix0)
-    print('max0', max0)
+    # print('matched_student0', matched_student0)
+    # print('matrix0', matrix0)
+    # print('max0', max0)
     problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
     reassign_time = 0
     while not is_offline_satisfied and reassign_time <= 5:
@@ -442,6 +442,26 @@ def main():
 
         problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
         reassign_time += 1
+
+    print('matched_student', matched_student)
+    result = []
+    for row in range(row_num):
+        number = row + 1
+        project = matched_student[row] + 1
+        # deal with unmatching conditions
+        if matched_student[row] == -1:
+            preference = 1000
+        else:
+            preference = original_matrix[row][matched_student[row]]
+        result.append([number, project, preference])
+    print("result", [a[2] for a in result])
+    result = pd.DataFrame(result)
+    # the result shows the projects students are assigned to and the preference
+    result.to_csv("result.csv")
+    matched_per_project = []
+    for col in range(col_num):
+        matched_per_project.append(matched_student.count(col))
+    print("matched_per_project", matched_per_project)
 
 
 if __name__ == '__main__':
