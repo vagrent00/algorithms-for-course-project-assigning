@@ -452,7 +452,7 @@ def main():
         if matched_student[row] == -1:
             preference = 1000
         else:
-            preference = original_matrix[row][matched_student[row]]
+            preference = original_matrix0[row][matched_student[row]]
         result.append([number, project, preference])
     print("result", [a[2] for a in result])
     result = pd.DataFrame(result)
