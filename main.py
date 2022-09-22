@@ -286,14 +286,16 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
         row_num,
         col_num, 100,
         original_matrix0, discarded_projects, 10000)
+    print('matched_student0 in major assignment', matched_student0)
+    print('max0 in major assignment', max0)
 
     # do the assignment once after the major requirements are satisfied
-    matched_matrix, matched_per_project = munkres(matrix0, max0, count_student0, count_project0)
+    matched_matrix, matched_per_project = munkres(matrix0.copy(), max0, count_student0, count_project0)
     matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
-        max0,
+        max0.copy(),
         matched_matrix,
         matched_per_project,
-        matched_student0,
+        matched_student0.copy(),
         original_matrix,
         dic_student0,
         dic_project0,
@@ -410,16 +412,22 @@ def main():
         discard_num = len(discarded_projects)
         discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
+    print('matched_student0', matched_student0)
+    print('matrix0', matrix0)
+    print('max0', max0)
     problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
-    while not is_offline_satisfied:
+    reassign_time = 0
+    while not is_offline_satisfied and reassign_time <= 5:
         for i in range(len(problematic_projects)):
             for j in range(matrix0.shape[1]):
                 if dic_project0[j] == problematic_projects[i]:
                     for ii in range(matrix0.shape[0]):
                         if dic_student0[ii] in problematic_projects_students[i]:
-                            matrix0[ii, j] += 10
+                            matrix0[ii, j] += 30
 
-        matched_matrix, matched_per_project = munkres(matrix0, max0, count_student0, count_project0)
+        # print(matrix0)
+        # print(matched_student0)
+        matched_matrix, matched_per_project = munkres(matrix0.copy(), max0, count_student0, count_project0)
         matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
             max0,
             matched_matrix,
@@ -433,6 +441,7 @@ def main():
             original_matrix0, discarded_projects0, 10)
 
         problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
+        reassign_time += 1
 
 
 if __name__ == '__main__':
