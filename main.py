@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 from assign import munkres
+from munkres import Munkres
 
 
 # -------------------------------------------------
@@ -12,7 +13,7 @@ from assign import munkres
 
 def Process_Data():
     # TODO: convert the original excel file into these three csv files
-    data: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/data.csv')))
+    data: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/data.csv', header=None)))
     student_info: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/student.csv', header=None)))
     project_info: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/project.csv', header=None)))
     row_num, col_num = data.shape
@@ -239,6 +240,7 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
     slot_project_correspondence = {}
     major_assignment_matrix = []
     remained_project = []
+    whether_have_discarded = False
 
     for col in range(col_num):
         if col not in discarded_projects:
@@ -259,8 +261,14 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
                         curr_slot += 1
 
     major_assignment_matrix = np.array(major_assignment_matrix)
-    matched_matrix, matched_per_student = munkres(major_assignment_matrix.copy(), [1] * row_num,
-                                                  major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
+    # matched_matrix, matched_per_student = munkres(major_assignment_matrix.copy(), [1] * row_num,
+    #                                               major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
+
+    m = Munkres()
+    indexes = m.compute(major_assignment_matrix.copy())
+    matched_matrix = np.zeros(major_assignment_matrix.shape, dtype=int)
+    for i, j in indexes:
+        matched_matrix[i, j] = 1
 
     formatted_matched_matrix = np.zeros((row_num, col_num - len(discarded_projects)), dtype=int)
     dic_project = {}
@@ -304,18 +312,19 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
         original_matrix0, discarded_projects0, 9)
 
     # do the assignment once more, and one project will be discarded
-    matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
-    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
-        max,
-        matched_matrix,
-        matched_per_project,
-        matched_student,
-        original_matrix,
-        dic_student,
-        dic_project,
-        row_num,
-        col_num, 9,
-        original_matrix0, discarded_projects, 5)
+    if not whether_have_discarded:
+        matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
+        matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+            max,
+            matched_matrix,
+            matched_per_project,
+            matched_student,
+            original_matrix,
+            dic_student,
+            dic_project,
+            row_num,
+            col_num, 9,
+            original_matrix0, discarded_projects, 5)
     # print('new turn')
     # print('discarded_projects', discarded_projects)
 
@@ -404,7 +413,7 @@ def main():
 
     # Output the result
     # Output(matched_student, original_matrix0, row_num, col_num)
-    # print("loose selection finished")
+    print("loose selection finished")
     discard_num = len(discarded_projects)
     discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
@@ -445,15 +454,18 @@ def main():
 
     print('matched_student', matched_student)
     result = []
+    unmatched_students = []
+    mismatched_students = []
     for row in range(row_num):
-        number = row + 1
-        project = matched_student[row] + 1
         # deal with unmatching conditions
         if matched_student[row] == -1:
             preference = 1000
+            unmatched_students.append(row)
         else:
             preference = original_matrix0[row][matched_student[row]]
-        result.append([number, project, preference])
+        if 8 <= preference <= 999:
+            mismatched_students.append(row)
+        result.append([row + 1, matched_student[row] + 1, preference])
     print("result", [a[2] for a in result])
     result = pd.DataFrame(result)
     # the result shows the projects students are assigned to and the preference
@@ -462,6 +474,8 @@ def main():
     for col in range(col_num):
         matched_per_project.append(matched_student.count(col))
     print("matched_per_project", matched_per_project)
+
+    print(mismatched_students, unmatched_students)
 
 
 if __name__ == '__main__':
