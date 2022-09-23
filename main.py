@@ -161,6 +161,7 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
                 count_project -= 1
 
     # discarding project
+    # every time discard the least popular project based on the info
     if discard_num == 1:
         max[discard_col[0]] = 0
         count_project -= 1
@@ -272,7 +273,11 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
             total_major_requirement_per_project.append(
                 project_info[1, col] + project_info[2, col] + project_info[3, col])
             remained_project.append(col)
+
             # for one project, it may have 3 types of major-specified slots:
+
+            # calculate the total special major requirement of a project
+
             for major in 0, 1, 2:
                 # if this project requires slot of this major:
                 if not project_info[major + 1, col] == 0:
