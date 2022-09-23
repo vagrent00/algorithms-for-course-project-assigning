@@ -423,6 +423,26 @@ def offline_test(discarded_projects, matched_student, student_info, project_info
     return problematic_projects, problematic_projects_students, is_offline_satisfied
 
 
+def is_all_requirements_satisfied(project_index: int, students: list[int], student_info: np.ndarray, project_info: np.ndarray) -> bool:
+    ece_num = 0
+    me_num = 0
+    mse_num = 0
+    offline_num = 0
+    for student in students:
+        if student_info[student][1] == 0:
+            ece_num += 1
+        elif student_info[student][1] == 1:
+            me_num += 1
+        else:
+            mse_num += 1
+        if student_info[student][2] == 1:
+            offline_num += 1
+
+    if ece_num >= project_info[1, project_index] and me_num >= project_info[2, project_index] and mse_num >= project_info[3, project_index] and offline_num >= project_info[4, project_index]:
+        return True
+    return False
+
+
 # -------------------------------------------------
 # Main function
 # -------------------------------------------------
@@ -469,6 +489,8 @@ def main():
     # Output the result
     # Output(matched_student, original_matrix0, row_num, col_num)
     print("loose selection finished")
+    print('discarded_projects in loose selection', discarded_projects)
+    discarded_projects_in_loose_selection = discarded_projects.copy()
 
     # --------------------------------------
     # after the loose selection is finished, do the major assignment repeatedly until no projects will be discarded
@@ -523,23 +545,23 @@ def main():
         problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
         reassign_time += 1
 
+    print('discarded_projects in requirements', discarded_projects)
     print('matched_student', matched_student)
     result = []
     unmatched_students = []
     mismatched_students = []
-    switch_candidate = []
+    # students that are assigned with preference higher than tolerance will be considered swapping with others
+    tolerance = 5
 
     for row in range(row_num):
-        # deal with unmatching conditions
+        # deal with no matching conditions
         if matched_student[row] == -1:
             preference = 1000
             unmatched_students.append(row)
         else:
             preference = original_matrix0[row][matched_student[row]]
-        if 9 <= preference <= 999:
+        if 10 <= preference <= 999:
             mismatched_students.append(row)
-        elif 4 <= preference <= 8:
-            switch_candidate.append(row)
         result.append([row + 1, matched_student[row] + 1, preference])
     print("result", [a[2] for a in result])
     result = pd.DataFrame(result)
@@ -550,54 +572,83 @@ def main():
         matched_per_project.append(matched_student.count(col))
     print("matched_per_project", matched_per_project)
 
-    print(mismatched_students, unmatched_students, switch_candidate)
+    print(mismatched_students, unmatched_students)
 
     # this step is to fill in unfilled projects if the preference is good
     for project in range(col_num):
         if 0 < matched_per_project[project] < 5:  # these projects have already satisfied the requirements, so any students are welcome
             for student in unmatched_students.copy():
-                if original_matrix0[student][project] <= 10:
+                if original_matrix0[student][project] <= 8:
                     matched_student[student] = project
                     matched_per_project[project] += 1
                     unmatched_students.remove(student)
-                    if original_matrix0[student][project] >= 4:
-                        switch_candidate.append(student)
                     if matched_per_project[project] == 5:
                         break
 
-    print("matched_per_project", matched_per_project)
-
-    # if one project still can't enroll enough people, discard it
+    # this step is to force students to the projects regardless of their preferences
     for project in range(col_num):
         if 0 < matched_per_project[project] < 4:
-            matched_per_project[project] = 0
-            for student in range(row_num):
-                if matched_student[student] == project:
-                    matched_student[student] = -1
-                    unmatched_students.append(student)
-                    if student in switch_candidate:
-                        switch_candidate.remove(student)
-
-    # if some students are still not assigned, enumerate all discarded projects to choose
+            for student in unmatched_students.copy():
+                matched_student[student] = project
+                matched_per_project[project] += 1
+                unmatched_students.remove(student)
+                if matched_per_project[project] == 5 or not unmatched_students:
+                    break
     print("matched_per_project", matched_per_project)
-    print(mismatched_students, unmatched_students, switch_candidate)
 
-    # num_target_project = ceil(len(unmatched_students) / 5)
-    # discarded_projects = []
-    # num_candidate = []
-    #
-    # for project in range(col_num):
-    #     if matched_per_project[project] == 0:
-    #         num = 0
-    #         discarded_projects.append(project)
-    #         for student in unmatched_students:
-    #             if original_matrix0[student][project] <= 10:
-    #                 num += 1
-    #         print(num)
-    #         num_candidate.append(num)
-    #
+    # if some students are still not assigned, find one project to accommodate them
+    # one assumption here: up to this point, less than 5 students are left, which should be the case otherwise there shouldn't be so many project discarded
 
-    # TODO: original_matrix0 is not changed. matched_student and matched_per_project is up-to-date. major: student_info[student_index, 1], offline: student_info[student_index, 2], project major requirement for 0, 1, 2: project_info[1/2/3, project_index], offline requirement: project_info[4, project_index]
+    rebirth_project = discarded_projects[0]
+    record = 1000  # describe the requirement level of project. 0 means no requirement
+    # only consider the projects discarded in the major assignment process
+    for project in discarded_projects:
+        if project not in discarded_projects_in_loose_selection:
+            complexness = project_info[2, project] + 10 * project_info[3, project] + 2 * project_info[4, project]
+            if complexness <= record:
+                record = complexness
+                rebirth_project = project
+
+    for student in unmatched_students.copy():
+        matched_student[student] = rebirth_project
+        matched_per_project[rebirth_project] += 1
+        unmatched_students.remove(student)
+
+    print("matched_per_project", matched_per_project)
+    print(matched_student)
+
+    # ------------------------------------------------------------------------
+    # for students with low preference, consider swapping with other students
+    # ------------------------------------------------------------------------
+
+    # this dict record projects with their assigned students
+    project_student_correspondence = {}
+    for project in range(col_num):
+        project_student_correspondence[project] = [row for row in list(range(row_num)) if matched_student[row] == project]
+    print(project_student_correspondence)
+
+    for student in range(row_num):
+        if original_matrix0[student][matched_student[student]] > tolerance:
+            possible_switch = [row for row in list(range(row_num)) if original_matrix0[row][matched_student[student]] < tolerance]
+            for possible_student in possible_switch:
+                stu_list1 = project_student_correspondence[matched_student[possible_student]].copy()
+                stu_list1.remove(possible_student)
+                stu_list1.append(student)
+
+                stu_list2 = project_student_correspondence[matched_student[student]].copy()
+                stu_list2.remove(student)
+                stu_list2.append(possible_student)
+                if original_matrix0[student][matched_student[possible_student]] < tolerance and is_all_requirements_satisfied(matched_student[possible_student], stu_list1, student_info, project_info) and is_all_requirements_satisfied(matched_student[student], stu_list2, student_info, project_info):
+                    temp = matched_student[possible_student]
+                    matched_student[possible_student] = matched_student[student]
+                    matched_student[student] = temp
+                    for project in range(col_num):
+                        project_student_correspondence[project] = [row for row in list(range(row_num)) if matched_student[row] == project]
+
+    print(project_student_correspondence)
+    print(matched_student)
+    print(f'important notes: project {rebirth_project}\'s requirement may not be satisfied!')
+    Output(matched_student, original_matrix0, row_num, col_num)
 
 
 if __name__ == '__main__':
