@@ -528,7 +528,7 @@ def main():
     #         num_candidate.append(num)
     #
 
-    # TODO: matched_student and matched_per_project is up-to-date. major: student_info[student_index, 1], offline: student_info[student_index, 2], project major requirement for 0, 1, 2: project_info[1/2/3, project_index], offline requirement: project_info[4, project_index]
+    # TODO: original_matrix0 is not changed. matched_student and matched_per_project is up-to-date. major: student_info[student_index, 1], offline: student_info[student_index, 2], project major requirement for 0, 1, 2: project_info[1/2/3, project_index], offline requirement: project_info[4, project_index]
 
 
 if __name__ == '__main__':
