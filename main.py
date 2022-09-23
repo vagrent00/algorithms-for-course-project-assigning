@@ -1,6 +1,8 @@
 # -------------------------------------------------
 # Import packages
 # -------------------------------------------------
+from math import ceil
+
 import numpy as np
 import pandas as pd
 from assign import munkres
@@ -456,6 +458,8 @@ def main():
     result = []
     unmatched_students = []
     mismatched_students = []
+    switch_candidate = []
+
     for row in range(row_num):
         # deal with unmatching conditions
         if matched_student[row] == -1:
@@ -463,8 +467,10 @@ def main():
             unmatched_students.append(row)
         else:
             preference = original_matrix0[row][matched_student[row]]
-        if 8 <= preference <= 999:
+        if 9 <= preference <= 999:
             mismatched_students.append(row)
+        elif 4 <= preference <= 8:
+            switch_candidate.append(row)
         result.append([row + 1, matched_student[row] + 1, preference])
     print("result", [a[2] for a in result])
     result = pd.DataFrame(result)
@@ -475,7 +481,54 @@ def main():
         matched_per_project.append(matched_student.count(col))
     print("matched_per_project", matched_per_project)
 
-    print(mismatched_students, unmatched_students)
+    print(mismatched_students, unmatched_students, switch_candidate)
+
+    # this step is to fill in unfilled projects if the preference is good
+    for project in range(col_num):
+        if 0 < matched_per_project[project] < 5:  # these projects have already satisfied the requirements, so any students are welcome
+            for student in unmatched_students.copy():
+                if original_matrix0[student][project] <= 10:
+                    matched_student[student] = project
+                    matched_per_project[project] += 1
+                    unmatched_students.remove(student)
+                    if original_matrix0[student][project] >= 4:
+                        switch_candidate.append(student)
+                    if matched_per_project[project] == 5:
+                        break
+
+    print("matched_per_project", matched_per_project)
+
+    # if one project still can't enroll enough people, discard it
+    for project in range(col_num):
+        if 0 < matched_per_project[project] < 4:
+            matched_per_project[project] = 0
+            for student in range(row_num):
+                if matched_student[student] == project:
+                    matched_student[student] = -1
+                    unmatched_students.append(student)
+                    if student in switch_candidate:
+                        switch_candidate.remove(student)
+
+    # if some students are still not assigned, enumerate all discarded projects to choose
+    print("matched_per_project", matched_per_project)
+    print(mismatched_students, unmatched_students, switch_candidate)
+
+    # num_target_project = ceil(len(unmatched_students) / 5)
+    # discarded_projects = []
+    # num_candidate = []
+    #
+    # for project in range(col_num):
+    #     if matched_per_project[project] == 0:
+    #         num = 0
+    #         discarded_projects.append(project)
+    #         for student in unmatched_students:
+    #             if original_matrix0[student][project] <= 10:
+    #                 num += 1
+    #         print(num)
+    #         num_candidate.append(num)
+    #
+
+    # TODO: matched_student and matched_per_project is up-to-date. major: student_info[student_index, 1], offline: student_info[student_index, 2], project major requirement for 0, 1, 2: project_info[1/2/3, project_index], offline requirement: project_info[4, project_index]
 
 
 if __name__ == '__main__':
