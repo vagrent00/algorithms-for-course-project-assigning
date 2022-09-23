@@ -501,7 +501,7 @@ def main():
         # print(matrix0)
         # print(matched_student0)
 
-        # do the assignment based on adjusted costs
+        # do the assignment based on increased costs
         matched_matrix, matched_per_project = munkres(matrix0.copy(), max0, count_student0, count_project0)
         matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
             max0,
