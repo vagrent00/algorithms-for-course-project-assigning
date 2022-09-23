@@ -1,8 +1,8 @@
 # -------------------------------------------------
 # Import packages
 # -------------------------------------------------
-from math import ceil
 
+from math import ceil
 import numpy as np
 import pandas as pd
 from assign import munkres
@@ -15,21 +15,24 @@ from munkres import Munkres
 
 def Process_Data():
     # TODO: convert the original excel file into these three csv files
+    # load cost matrix, student information matrix and project information matrix from 3 csv files in data folder
     data: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/data.csv', header=None)))
     student_info: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/student.csv', header=None)))
     project_info: np.ndarray = np.array(pd.DataFrame(pd.read_csv('data/project.csv', header=None)))
     row_num, col_num = data.shape
+    # set unfilled cost as 100 (high)
     for row in range(row_num):
         for col in range(col_num):
             if data[row][col] == ' ':
                 data[row][col] = 100
+    # set unfilled project requirements as 0 (no requirement)
     for row in range(project_info.shape[0]):
         for col in range(project_info.shape[1]):
             if not 0 <= project_info[row][col] <= 100:
                 project_info[row][col] = 0
-    # same value currently, but used for different purposes
+    # the original cost matrix that will be referred to throughout the program
     original_matrix0 = data.astype('int')
-    # square the preference value to punish low priority
+    # square the preference value to punish low priority, and the convex transformation will make the deviation small. e.g. 3^2 + 4^2 < 2^2 + 5^2
     original_matrix = original_matrix0 ** 2
     student_info = student_info.astype('int')
     project_info = project_info.astype('int')
@@ -45,7 +48,7 @@ def Output(matched_student, original_matrix, row_num, col_num):
     for row in range(row_num):
         number = row + 1
         project = matched_student[row] + 1
-        # deal with unmatching conditions
+        # deal with no matching conditions
         if matched_student[row] == -1:
             preference = 1000
         else:
@@ -78,10 +81,10 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     :param dic_project: the dictionary to convert the order of projects in the matching process to the original order
     :param row_num: number of students
     :param col_num: number of projects
-    :param i: the ith loop
+    :param i: the ith loop. special cases are there that i is set to be 100, which means that no projects will be discarded
     :param original_matrix0: the original matrix without any process, used for final result
     :param discarded_projects: the column index of discarded projects
-    :param tolerance: the highest cost that will not be removed
+    :param tolerance:int, matching with preference greater than it will be removed
     :return:
     new_matrix: updated students' preference matrix that is used in the next matching process
     matched_student: an array about the project number that a certain student is enrolled
@@ -100,56 +103,55 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
     # eliminate those matching with low priority
     for row in range(len(dic_student)):
         for col in range(len(dic_project)):
-            if matched_matrix[row][col] == 1 and original_matrix0[dic_student[row]][dic_project[col]] > tolerance:  # TODO: find the best hyperparameter
+            if matched_matrix[row][col] == 1 and original_matrix0[dic_student[row]][dic_project[col]] > tolerance:
                 matched_matrix[row][col] = 0
 
-    # projects enrolled below the lower limit will be eliminated,
-    # and the lower limit is increased every three turns
-    lower_limit = 0
-
-    if i < 12:
+    # projects with enrollment below the lower limit may be discarded, and the lower limit is increased every three turns during the first-round selection
+    # some special rounds (marked with i = 100) don't need to discard projects
+    if i >= 100:
+        lower_limit = -1
+    else:
         lower_limit = i // 3
-    elif i >= 100:
-        lower_limit = -1  # some special round don't need to discard projects
 
     # -------------------------------------------------
     # 2. For projects that are full of people, assign students to
-    # corresponding projects and remove the projects.
-    # For projects that have people fewer than the lower limit,
-    # discard the projects and leave students to the next turn for matching.
+    # corresponding projects and remove the projects from further assignment.
+    # If there exist projects that have enrollment fewer than the lower limit,
+    # discard the project with the least enrollment and release students to the next turn for matching.
     # -------------------------------------------------
 
     discard_num = 0  # the number of projects whose enrollment is less than the lower limit
-    discard_col = []  # the column number of potential discards
-    discard_info = []  # enrollment of potential discards
+    discard_col = []  # the index of project discard candidates
+    discard_info = []  # number of enrollment of potential discards
 
     # traverse every project in the matching process
     count_project = len(matched_per_project)
     for col in range(count_project):
+        # the project is full of people
         if matched_per_project[col] + matched_student.count(dic_project[col]) == 5:
-            # the project is full of people
             count_project -= 1
 
             for row in range(len(dic_student)):
                 if matched_matrix[row][col] == 1:
-                    # the student has been enrolled, and can't be enrolled in other projects
+                    # register the student, so that he will not enter next assignment
                     matched_student[dic_student[row]] = dic_project[col]
             # the project cannot enroll any more students
             max[col] = 0
+        # the project has enough students
         elif matched_per_project[col] + matched_student.count(dic_project[col]) == 4:
             # the project can enroll at most one student
             for row in range(len(dic_student)):
                 if matched_matrix[row][col] == 1:
-                    # enroll those matched students
+                    # register those matched students
                     matched_student[dic_student[row]] = dic_project[col]
             max[col] = 1
+        # the project has too fewer students, so that it will be marked as discard candidate and may be discarded if it has the fewest enrollment
         elif matched_per_project[col] + matched_student.count(dic_project[col]) <= lower_limit:
-            # Because the projects have too few people, they would be discarded.
             discard_num += 1
             discard_col.append(col)
             discard_info.append(matched_per_project[col] + matched_student.count(dic_project[col]))
 
-        elif i >= 100:  # special round need to register students even if the projects are not full
+        elif i >= 100:  # special round (major assignment round) needs to register students even if the projects have no enough students
             for row in range(len(dic_student)):
                 if matched_matrix[row][col] == 1:
                     # enroll those matched students
@@ -237,54 +239,86 @@ def Update_matrix(max, matched_matrix, matched_per_project, matched_student, ori
 
 def major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix,
                      original_matrix0):
-    total_major_requirement_per_project = []
-    curr_slot = 0
-    slot_project_correspondence = {}
-    major_assignment_matrix = []
-    remained_project = []
-    whether_have_discarded = False
+    """
+    perform one round of assignments, so that except for the projects that are already discarded, all projects' major requirement will be satisfied.
 
+    :param col_num: # total projects
+    :param discarded_projects: the list of projects that are already discarded before entering this major assignment round
+    :param project_info: matrix records the requirements of projects
+    :param row_num: # total students
+    :param student_info: matrix records the requirements of students
+    :param original_matrix: complete matrix with doubled cost
+    :param original_matrix0: complete original matrix
+    :return:
+
+    """
+    # -------------------------------------------------
+    # 1. take out the major-specified slot of projects and assign students to them
+    # -------------------------------------------------
+
+    total_major_requirement_per_project = []
+    # record the index of the major-specified slot
+    curr_slot = 0
+    # the dict that records slot index with which original project it belongs to.
+    slot_project_correspondence = {}
+    # the cost matrix for major assignment, each row is the cost of one slot
+    major_assignment_matrix = []
+    # the index of projects that are not discarded
+    remained_project = []
+
+    # traverse through all remaining projects
     for col in range(col_num):
         if col not in discarded_projects:
             total_major_requirement_per_project.append(
                 project_info[1, col] + project_info[2, col] + project_info[3, col])
             remained_project.append(col)
+            # for one project, it may have 3 types of major-specified slots:
             for major in 0, 1, 2:
+                # if this project requires slot of this major:
                 if not project_info[major + 1, col] == 0:
+                    # construct one slot for each requirement
                     for i in range(project_info[major + 1, col]):
+                        # preference vector for this slot
                         row = [0] * row_num
                         for j in range(row_num):
+                            # if major is not matched, the cost will be very high
                             if not student_info[j, 1] == major:
                                 row[j] = 10000
+                            # if major matched, cost is the same as original
                             else:
                                 row[j] = original_matrix[j, col]
+                        # add this preference vector to the cost matrix
                         major_assignment_matrix.append(row)
-                        slot_project_correspondence[curr_slot] = col
+                        slot_project_correspondence[curr_slot] = col  # record the slot-project correspondence
                         curr_slot += 1
 
     major_assignment_matrix = np.array(major_assignment_matrix)
     # matched_matrix, matched_per_student = munkres(major_assignment_matrix.copy(), [1] * row_num,
     #                                               major_assignment_matrix.shape[0], major_assignment_matrix.shape[1])
 
+    # conduct matching between slots and students, matched matrix's row is one slot, column is one student
     m = Munkres()
     indexes = m.compute(major_assignment_matrix.copy())
     matched_matrix = np.zeros(major_assignment_matrix.shape, dtype=int)
     for i, j in indexes:
         matched_matrix[i, j] = 1
 
+    # rearrange the matching matrix into the usual format, each row is changed back to students and each column is changed back to projects
     formatted_matched_matrix = np.zeros((row_num, col_num - len(discarded_projects)), dtype=int)
     dic_project = {}
 
     for i in range(col_num - len(discarded_projects)):
         dic_project[i] = remained_project[i]
 
-    # format the new matched_matrix to the original format
     for i in range(row_num):
         for j in range(major_assignment_matrix.shape[0]):
             if matched_matrix[j, i]:
                 formatted_matched_matrix[i, remained_project.index(slot_project_correspondence[j])] = 1
 
     # print('total_major_requirement_per_project', total_major_requirement_per_project)
+
+    # Use Update_matrix function to generate assignment information (matched_student, matrix to be assigned next time). i is set to 100 so that no projects will be discarded and students can enroll even if the enrollment is small
+    # the return values are marked with 0 (e.g. matrix0) and be returned by this function so that user can see the assignment situation when only major-specified slots are assigned.
     matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = Update_matrix(
         [5] * (col_num - len(discarded_projects)),
         formatted_matched_matrix,
@@ -299,7 +333,7 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
     # print('matched_student0 in major assignment', matched_student0)
     # print('max0 in major assignment', max0)
 
-    # do the assignment once after the major requirements are satisfied
+    # assign other students to the usual slots after the major-specified slots are satisfied
     matched_matrix, matched_per_project = munkres(matrix0.copy(), max0, count_student0, count_project0)
     matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
         max0.copy(),
@@ -313,20 +347,19 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
         col_num, 100,
         original_matrix0, discarded_projects0, 9)
 
-    # do the assignment once more, and one project will be discarded
-    if not whether_have_discarded:
-        matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
-        matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
-            max,
-            matched_matrix,
-            matched_per_project,
-            matched_student,
-            original_matrix,
-            dic_student,
-            dic_project,
-            row_num,
-            col_num, 9,
-            original_matrix0, discarded_projects, 5)
+    # do the assignment once again, and this time one project may be discarded  ( i not equal to 100)
+    matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
+    matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
+        max,
+        matched_matrix,
+        matched_per_project,
+        matched_student,
+        original_matrix,
+        dic_student,
+        dic_project,
+        row_num,
+        col_num, 9,
+        original_matrix0, discarded_projects, 5)
     # print('new turn')
     # print('discarded_projects', discarded_projects)
 
@@ -334,30 +367,45 @@ def major_assignment(col_num, discarded_projects, project_info, row_num, student
 
 
 def offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num):
+    """
+    test if the given matched_student result meet the requirement of offline students of projects
+
+    :return:
+    problematic_projects: the list of indexes of projects that fail to meet the requirement of offline students
+    problematic_projects_students: list[list[int]], record the online students in projects lacking offline students
+    is_offline_satisfied: bool
+    """
     dic_project = {}
     remained_project = []
     index = 0
     problematic_projects = []
     problematic_projects_students = []
 
+    # record the projects that are remained
     for i in range(col_num):
         if i not in discarded_projects:
             dic_project[index] = i
             remained_project.append(i)
             index += 1
 
+    # traverse the remained projects
     for project in remained_project:
+        # the list to record online students
         student_list = []
         num_offline = 0
         for i in range(row_num):
             if matched_student[i] == project:
+                # if the student assigned to this project is offline, add 1 to offline number
                 if student_info[i, 2] == 1:
                     num_offline += 1
+                # else, record the online student
                 else:
                     student_list.append(i)
 
+        # if the project have no enough offline students
         if num_offline < project_info[4, project]:
             # print(f'project {project} has no enough offline student!')
+            # append the project index and corresponding online students
             problematic_projects.append(project)
             problematic_projects_students.append(student_list)
             # print(student_list)
@@ -389,7 +437,7 @@ def main():
     target_discard_num = col_num - row_num // 4  # the number of project to be discarded firstly
     discarded_projects = []  # record the column index of discarded projects
 
-    # the main loop
+    # while the projects discarded is less than the expected number, keep assigning and discarding
     while len(discarded_projects) < target_discard_num:
         # first match students with projects by the munkres algorithm
         matched_matrix, matched_per_project = munkres(matrix, max, count_student, count_project)
@@ -416,6 +464,10 @@ def main():
     # Output the result
     # Output(matched_student, original_matrix0, row_num, col_num)
     print("loose selection finished")
+
+    # --------------------------------------
+    # after the loose selection is finished, do the major assignment repeatedly until no projects will be discarded
+    # --------------------------------------
     discard_num = len(discarded_projects)
     discarded_projects, matched_student, matrix0, matched_student0, max0, count_student0, count_project0, dic_student0, dic_project0, discarded_projects0 = major_assignment(col_num, discarded_projects, project_info, row_num, student_info, original_matrix, original_matrix0)
 
@@ -426,18 +478,30 @@ def main():
     # print('matched_student0', matched_student0)
     # print('matrix0', matrix0)
     # print('max0', max0)
+
+    # --------------------------------
+    # test if the result of major assignment satisfies the offline requirement
+    # if it's not satisfied, increase the cost of online students to the projects lacking offline students and reassign them until the requirement is satisfied
+    # --------------------------------
+
     problematic_projects, problematic_projects_students, is_offline_satisfied = offline_test(discarded_projects, matched_student, student_info, project_info, col_num, row_num)
     reassign_time = 0
     while not is_offline_satisfied and reassign_time <= 5:
+        # traverse unsatisfied projects
         for i in range(len(problematic_projects)):
+            # we don't want to reassign students assigned to major-specified slots, so the reassignment is based on matrix0, which is the cost matrix after major-slot assignment and before the other slot assignment in major_assignment function.
             for j in range(matrix0.shape[1]):
+                # find the dissatisfied project in matrix0
                 if dic_project0[j] == problematic_projects[i]:
                     for ii in range(matrix0.shape[0]):
                         if dic_student0[ii] in problematic_projects_students[i]:
+                            # increase the cost of assigned online students
                             matrix0[ii, j] += 30
 
         # print(matrix0)
         # print(matched_student0)
+
+        # do the assignment based on adjusted costs
         matched_matrix, matched_per_project = munkres(matrix0.copy(), max0, count_student0, count_project0)
         matrix, matched_student, max, count_student, count_project, dic_student, dic_project, discarded_projects = Update_matrix(
             max0,
