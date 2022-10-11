@@ -1,7 +1,7 @@
 # Algorithm for Project Assigning (complete version)
 
 ### Purpose
-This program is to help with instructors to assign students to different projects based on their ranking of perference to the projects.
+This program is to help with instructors to assign students to different projects based on their ranking of perference to the projects. It can also be applied to other matching problems that minimize the costs.
 
 ### Feature
 This version(v2.0) of program can satisfy projects' requirements about participants' major and offline status. If 
